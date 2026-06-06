@@ -18,15 +18,12 @@ def run_code(peticion: PeticionCodigo):
     bytes_totales = bytearray()
     
     # 1. FASE DE COMPILACIÓN
-    for num_linea, linea in enumerate(lineas_codigo, 1):
-        linea = linea.split("#")[0].split("//")[0].strip()
-        if not linea:
-            continue
-            
-        hex_str = compilador.encode_instruction(linea)
-        if hex_str.startswith("Error"):
-            raise HTTPException(status_code=400, detail=f"Error en la línea {num_linea}: {hex_str}")
-            
+    try:
+        instrucciones_hex = compilador.compile_program(peticion.codigo)
+    except Exception as e:
+        raise HTTPException(status_code=400, detail=str(e))
+        
+    for hex_str in instrucciones_hex:
         bytes_crudos = bytes.fromhex(hex_str[2:])[::-1]
         bytes_totales.extend(bytes_crudos)
         
