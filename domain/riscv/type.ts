@@ -10,4 +10,8 @@ export interface RiscvRunResponse {
   registers: number[];
   memory: number[];       // Snapshot de los primeros 4 KB (4096 bytes)
   program_size: number;   // Tamaño del binario compilado en bytes
+  
+  // Nuevos campos para sesión de debug
+  session_id?: string;
+  is_finished?: boolean;
 }

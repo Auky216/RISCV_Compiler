@@ -14,6 +14,8 @@ export class RiscvModel {
   public registers: number[];
   public memory: number[];
   public programSize: number;
+  public sessionId?: string;
+  public isFinished?: boolean;
 
   constructor(data: RiscvRunResponse) {
     this.status       = data.status;
@@ -22,6 +24,8 @@ export class RiscvModel {
     this.registers    = data.registers    || Array(32).fill(0);
     this.memory       = data.memory       || Array(4096).fill(0);
     this.programSize  = data.program_size || 0;
+    this.sessionId    = data.session_id;
+    this.isFinished   = data.is_finished;
   }
 
   /** Nombre ABI del registro (ej. "a0", "sp") */

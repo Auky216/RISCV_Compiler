@@ -1,5 +1,6 @@
 "use client";
 
+import React from "react";
 import { UserResponse } from "@/domain/user/type";
 import { RiscvModel } from "@/domain/riscv/model";
 
@@ -12,6 +13,11 @@ interface TopNavBarProps {
   onReset: () => void;
   onLogout: () => void;
   onOpenSettings: () => void;
+  isDebugging: boolean;
+  onDebugStart: () => void;
+  onStep: () => void;
+  onStop: () => void;
+  onUploadBin: (file: File) => void;
 }
 
 export function TopNavBar({
@@ -23,7 +29,19 @@ export function TopNavBar({
   onReset,
   onLogout,
   onOpenSettings,
+  isDebugging,
+  onDebugStart,
+  onStep,
+  onStop,
+  onUploadBin,
 }: TopNavBarProps) {
+  const fileInputRef = React.useRef<HTMLInputElement>(null);
+
+  const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    if (e.target.files && e.target.files.length > 0) {
+      onUploadBin(e.target.files[0]);
+    }
+  };
   const pcValue = model
     ? "0x" + (model.stepsExecuted * 4).toString(16).padStart(8, "0").toUpperCase()
     : "0x00000000";
@@ -38,15 +56,26 @@ export function TopNavBar({
         >
           RISC-V Studio
         </a>
-        <nav className="flex gap-1">
-          {["File", "Edit", "Build", "Debug"].map((item) => (
+        <nav className="flex gap-1 relative group">
+          <button className="font-body-sm text-body-sm text-on-surface-variant hover:bg-surface-container-high px-2 py-0.5 transition-colors">
+            File
+          </button>
+          {/* Dropdown simple en CSS para "File" */}
+          <div className="absolute top-full left-0 bg-surface-container-highest border border-outline-variant shadow-lg hidden group-hover:flex flex-col min-w-[150px] py-1 z-50">
             <button
-              key={item}
-              className="font-body-sm text-body-sm text-on-surface-variant hover:bg-surface-container-high px-2 py-0.5 transition-colors"
+              onClick={() => fileInputRef.current?.click()}
+              className="text-left px-4 py-1.5 font-body-sm text-body-sm text-on-surface-variant hover:bg-surface-container-high hover:text-on-surface"
             >
-              {item}
+              Load .bin File...
             </button>
-          ))}
+            <input 
+              type="file" 
+              accept=".bin" 
+              className="hidden" 
+              ref={fileInputRef} 
+              onChange={handleFileChange} 
+            />
+          </div>
         </nav>
       </div>
 
@@ -81,22 +110,31 @@ export function TopNavBar({
           <span>{isLoading ? "Running..." : "Run"}</span>
         </button>
 
-        {/* Step — P1 roadmap */}
+        {/* Step */}
         <button
-          className="flex items-center gap-1.5 px-3 py-0.5 border border-outline-variant text-on-surface-variant font-body-sm text-body-sm opacity-40 cursor-not-allowed"
-          disabled
-          title="Step debugger — próximamente"
+          onClick={isDebugging ? onStep : onDebugStart}
+          disabled={isLoading || (model?.isFinished && isDebugging)}
+          className={`flex items-center gap-1.5 px-3 py-0.5 border font-body-sm text-body-sm transition-all ${
+            isDebugging
+              ? "border-primary text-primary hover:bg-primary/10"
+              : "border-outline-variant text-on-surface-variant hover:border-outline"
+          } ${isLoading || model?.isFinished ? "opacity-40 cursor-not-allowed" : ""}`}
+          title={isDebugging ? "Paso a paso (Step)" : "Start Debug Session"}
         >
           <span className="material-symbols-outlined">step_into</span>
-          <span>Step</span>
+          <span>{isDebugging ? "Step" : "Debug"}</span>
         </button>
 
+        {/* Stop / Pause */}
         <button
-          className="p-1 text-on-surface-variant opacity-40 cursor-not-allowed"
-          disabled
-          title="Pause — próximamente"
+          onClick={onStop}
+          className={`p-1 transition-colors ${
+            isDebugging ? "text-error hover:bg-error/10" : "text-on-surface-variant opacity-40 cursor-not-allowed"
+          }`}
+          disabled={!isDebugging}
+          title="Terminar sesión de debug"
         >
-          <span className="material-symbols-outlined">pause</span>
+          <span className="material-symbols-outlined">stop</span>
         </button>
 
         <div className="h-4 w-px bg-outline-variant mx-1" />

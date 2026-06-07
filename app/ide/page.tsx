@@ -26,6 +26,9 @@ function IdePage() {
   );
   const [model, setModel] = useState<RiscvModel | null>(null);
   const [isLoading, setIsLoading] = useState(false);
+  const [isDebugging, setIsDebugging] = useState(false);
+  const [isBinaryMode, setIsBinaryMode] = useState(false);
+  
   const [logs, setLogs] = useState<LogEntry[]>([
     { type: "info", message: "RISC-V IDE Ready. Backend connected.", timestamp: new Date().toLocaleTimeString() }
   ]);
@@ -87,8 +90,66 @@ function IdePage() {
     }
   };
 
-  const handleReset = () => {
+  const handleDebugStart = async () => {
+    setIsLoading(true);
+    addLog({ type: "info", message: "Iniciando sesión de debug interactivo..." });
+    try {
+      const result = await RiscvService.startDebugSession(code);
+      setModel(result);
+      setIsDebugging(true);
+      addLog({ type: "success", message: `Sesión de debug iniciada (ID: ${result.sessionId}).` });
+    } catch (error: any) {
+      addLog({ type: "error", message: error.message });
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
+  const handleStep = async () => {
+    if (!model?.sessionId) return;
+    try {
+      const result = await RiscvService.stepSession(model.sessionId);
+      setModel(result);
+      if (result.isFinished) {
+        addLog({ type: "info", message: `Programa finalizado en el paso ${result.stepsExecuted}.` });
+      }
+    } catch (error: any) {
+      addLog({ type: "error", message: error.message });
+      setIsDebugging(false);
+    }
+  };
+
+  const handleStop = async () => {
+    if (model?.sessionId) {
+      await RiscvService.stopSession(model.sessionId);
+    }
+    setIsDebugging(false);
+    addLog({ type: "info", message: "Sesión de debug terminada." });
+  };
+
+  const handleUploadBin = async (file: File) => {
+    setIsLoading(true);
+    addLog({ type: "info", message: `Cargando archivo binario: ${file.name}...` });
+    try {
+      const result = await RiscvService.uploadBinFile(file);
+      setModel(result);
+      setIsBinaryMode(true);
+      setIsDebugging(true);
+      addLog({ type: "success", message: `Binario cargado. Listo para debug.` });
+    } catch (error: any) {
+      addLog({ type: "error", message: error.message });
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
+  const handleReset = async () => {
+    if (model?.sessionId) {
+      await RiscvService.stopSession(model.sessionId);
+    }
     setModel(null);
+    setIsDebugging(false);
+    setIsBinaryMode(false);
     addLog({ type: "info", message: "CPU state reset. Memory and registers cleared." });
   };
 
@@ -103,6 +164,11 @@ function IdePage() {
         onReset={handleReset}
         onLogout={logout}
         onOpenSettings={() => setIsSettingsOpen(true)}
+        isDebugging={isDebugging}
+        onDebugStart={handleDebugStart}
+        onStep={handleStep}
+        onStop={handleStop}
+        onUploadBin={handleUploadBin}
       />
 
       <main className="flex flex-1 pt-toolbar-height overflow-hidden">
@@ -112,7 +178,7 @@ function IdePage() {
           <div className="flex flex-1 overflow-hidden">
             {/* Main Area: currently only Editor is active */}
             {activeView === "editor" && (
-              <CodeEditor code={code} onChange={setCode} fontSize={settings.fontSize} />
+              <CodeEditor code={code} onChange={setCode} fontSize={settings.fontSize} isBinaryMode={isBinaryMode} />
             )}
 
             {/* Right Panel: Registers or Memory Map */}

@@ -3,9 +3,10 @@ routers/riscv.py — Endpoints relacionados al compilador y simulador RISC-V.
 
 POST /api/run  — Compila y simula. Devuelve registros + snapshot de memoria.
 """
-from fastapi import APIRouter, HTTPException
+from fastapi import APIRouter, HTTPException, UploadFile, File
 from pydantic import BaseModel, Field
-from typing import Optional
+from typing import Optional, Dict
+import uuid
 
 from riscv_core.compiler import CompiladorRISCV
 from riscv_core.simulator import SimuladorRISCV
@@ -17,6 +18,16 @@ DEFAULT_MAX_STEPS = 10_000
 HARD_MAX_STEPS   = 100_000
 # Cuántos bytes de memoria enviamos al frontend (primeros 4 KB)
 MEMORY_SNAPSHOT_BYTES = 4 * 1024  # 4 KB
+
+# Estructura in-memory para el debugger
+class DebugSession:
+    def __init__(self, sim: SimuladorRISCV, program_size: int):
+        self.sim = sim
+        self.program_size = program_size
+        self.steps_executed = 0
+        self.is_finished = False
+
+debug_sessions: Dict[str, DebugSession] = {}
 
 
 class RunRequest(BaseModel):
@@ -103,3 +114,104 @@ def run_code(req: RunRequest):
         "memory":         memory_snapshot,
         "program_size":   len(bytes_totales),
     }
+
+# =========================================================
+# ENDPOINTS PARA DEBUG PASO A PASO
+# =========================================================
+
+def extract_state(session: DebugSession, session_id: str):
+    return {
+        "status": "success",
+        "session_id": session_id,
+        "steps_executed": session.steps_executed,
+        "hit_limit": False, # En paso a paso no se usa el límite global
+        "is_finished": session.is_finished,
+        "registers": [session.sim.leer_registro(i) for i in range(32)],
+        "memory": list(session.sim.memoria[:MEMORY_SNAPSHOT_BYTES]),
+        "program_size": session.program_size,
+    }
+
+@router.post("/debug/start", summary="Inicia una sesión de debug con código ASM")
+def debug_start(req: RunRequest):
+    compilador = CompiladorRISCV()
+    sim = SimuladorRISCV()
+    bytes_totales = bytearray()
+
+    try:
+        instrucciones_hex = compilador.compile_program(req.codigo)
+    except Exception as e:
+        raise HTTPException(status_code=400, detail=str(e))
+
+    for hex_str in instrucciones_hex:
+        bytes_totales.extend(bytes.fromhex(hex_str[2:])[::-1])
+
+    if len(bytes_totales) > len(sim.memoria):
+        raise HTTPException(status_code=400, detail="Programa excede la memoria.")
+
+    sim.memoria[0:len(bytes_totales)] = bytes_totales
+    sim.pc = 0
+
+    session_id = str(uuid.uuid4())
+    debug_sessions[session_id] = DebugSession(sim, len(bytes_totales))
+    
+    return extract_state(debug_sessions[session_id], session_id)
+
+@router.post("/debug/step/{session_id}", summary="Avanza 1 paso en la sesión")
+def debug_step(session_id: str):
+    if session_id not in debug_sessions:
+        raise HTTPException(status_code=404, detail="Sesión no encontrada o expirada.")
+    
+    session = debug_sessions[session_id]
+    if session.is_finished:
+        return extract_state(session, session_id)
+
+    try:
+        b0 = session.sim.memoria[session.sim.pc]
+        b1 = session.sim.memoria[session.sim.pc + 1]
+        b2 = session.sim.memoria[session.sim.pc + 2]
+        b3 = session.sim.memoria[session.sim.pc + 3]
+        instruccion = (b3 << 24) | (b2 << 16) | (b1 << 8) | b0
+        
+        if instruccion == 0:
+            session.is_finished = True
+        else:
+            session.sim.step()
+            session.steps_executed += 1
+            
+    except Exception as e:
+        session.is_finished = True
+        raise HTTPException(status_code=400, detail=f"Falla de ejecución: {e}")
+
+    return extract_state(session, session_id)
+
+@router.delete("/debug/{session_id}", summary="Termina una sesión de debug")
+def debug_stop(session_id: str):
+    if session_id in debug_sessions:
+        del debug_sessions[session_id]
+    return {"status": "success", "message": "Sesión terminada."}
+
+# =========================================================
+# ENDPOINTS PARA ARCHIVOS .BIN
+# =========================================================
+
+@router.post("/upload_bin", summary="Carga un archivo .bin e inicia sesión de debug")
+def upload_bin(file: UploadFile = File(...)):
+    if not file.filename.endswith(".bin"):
+        raise HTTPException(status_code=400, detail="El archivo debe tener extensión .bin")
+    
+    bytes_leidos = file.file.read()
+    if len(bytes_leidos) == 0:
+        raise HTTPException(status_code=400, detail="El archivo está vacío.")
+        
+    sim = SimuladorRISCV()
+    if len(bytes_leidos) > len(sim.memoria):
+        raise HTTPException(status_code=400, detail="Programa excede la memoria.")
+        
+    sim.memoria[0:len(bytes_leidos)] = bytes_leidos
+    sim.pc = 0
+
+    session_id = str(uuid.uuid4())
+    debug_sessions[session_id] = DebugSession(sim, len(bytes_leidos))
+    
+    return extract_state(debug_sessions[session_id], session_id)
+
