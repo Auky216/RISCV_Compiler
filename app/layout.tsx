@@ -1,6 +1,7 @@
 import type { Metadata } from "next";
 import { Inter, JetBrains_Mono } from "next/font/google";
 import "./globals.css";
+import { AuthProvider } from "@/lib/auth-context";
 
 const inter = Inter({
   variable: "--font-inter",
@@ -13,8 +14,8 @@ const jetbrainsMono = JetBrains_Mono({
 });
 
 export const metadata: Metadata = {
-  title: "RISC-V Studio IDE",
-  description: "Web based RISC-V Assembler and Simulator",
+  title: "RISC-V Studio — Assembler & Simulator",
+  description: "IDE web para aprender, escribir y simular arquitectura RISC-V. Compilador de 2 pasadas, 32 registros, 1MB de memoria virtual.",
 };
 
 export default function RootLayout({
@@ -42,8 +43,10 @@ export default function RootLayout({
           .no-shadow { box-shadow: none !important; }
         `}</style>
       </head>
-      <body className="bg-background text-on-surface font-body-sm h-screen overflow-hidden flex flex-col">
-        {children}
+      <body className="bg-background text-on-surface font-body-sm min-h-screen flex flex-col">
+        <AuthProvider>
+          {children}
+        </AuthProvider>
       </body>
     </html>
   );
