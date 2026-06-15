@@ -1,4 +1,0 @@
-# Archivo de prueba usando alias ABI
-addi t0, zero, 10      # Inicializamos t0 (x5) en 10
-addi t1, zero, 5       # Inicializamos t1 (x6) en 5
-add  a0, t0, t1        # Sumamos t0 + t1 y lo guardamos en a0 (x10)

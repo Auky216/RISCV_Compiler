@@ -1,201 +1,134 @@
 """
-routers/riscv.py — Endpoints relacionados al compilador y simulador RISC-V.
+routers/riscv.py — Endpoints relacionados al simulador RISC-V.
 
-POST /api/run  — Compila y simula. Devuelve registros + snapshot de memoria.
+Utiliza inyección de estado para simular usando los componentes modulares puros
+del hardware ubicado en `riscv_core.single_cycle` sin modificar sus archivos.
 """
-from fastapi import APIRouter, HTTPException, UploadFile, File
+from fastapi import APIRouter, HTTPException, UploadFile, File, Form
 from pydantic import BaseModel, Field
 from typing import Optional, Dict
 import uuid
+import sys
+import os
+from pathlib import Path
 
-from riscv_core.compiler import CompiladorRISCV
-from riscv_core.simulator import SimuladorRISCV
+# Añadimos single_cycle al PYTHONPATH para que los import locales del hardware (ej. `from mux2 import MUX2`) funcionen
+project_root = Path(__file__).resolve().parent.parent.parent
+single_cycle_dir = project_root / "riscv_core" / "single_cycle"
+if str(single_cycle_dir) not in sys.path:
+    sys.path.insert(0, str(single_cycle_dir))
+
+# Importamos los modulos del hardware "como son"
+import riscv_core.single_cycle.data_memory as sc_dmem
+import riscv_core.single_cycle.instruction_memory as sc_imem
+import riscv_core.single_cycle.register_file as sc_reg
+from riscv_core.single_cycle.control_unit import CONTROL_UNIT
+from riscv_core.single_cycle.datapath import DATAPATH
+from riscv_core.single_cycle.flopr import FLOPR
+from riscv_core.single_cycle.mux2 import MUX2
 
 router = APIRouter(prefix="", tags=["RISC-V"])
 
-# Límite por defecto (el cliente puede sobreescribirlo hasta 100_000)
 DEFAULT_MAX_STEPS = 10_000
-HARD_MAX_STEPS   = 100_000
-# Cuántos bytes de memoria enviamos al frontend (primeros 4 KB)
-MEMORY_SNAPSHOT_BYTES = 4 * 1024  # 4 KB
+MEMORY_SNAPSHOT_BYTES = 4096
 
-# Estructura in-memory para el debugger
 class DebugSession:
-    def __init__(self, sim: SimuladorRISCV, program_size: int):
-        self.sim = sim
-        self.program_size = program_size
+    def __init__(self, program_bytes: bytearray, architecture: str):
+        self.architecture = architecture
+        self.program_size = len(program_bytes)
         self.steps_executed = 0
         self.is_finished = False
+        self.pc = 0
+        self.registers = [0] * 32
+        self.memory = bytearray(8192) # 8KB de memoria para el backend
+        
+        # Copiamos el programa al inicio de la memoria
+        size = min(len(program_bytes), len(self.memory))
+        self.memory[0:size] = program_bytes[:size]
 
 debug_sessions: Dict[str, DebugSession] = {}
 
-
 class RunRequest(BaseModel):
     codigo: str
-    max_steps: Optional[int] = Field(
-        default=DEFAULT_MAX_STEPS,
-        ge=1,
-        le=HARD_MAX_STEPS,
-        description="Número máximo de pasos de simulación (1–100 000)",
+    max_steps: Optional[int] = Field(default=DEFAULT_MAX_STEPS)
+    architecture: str = "single_cycle"
+
+def inject_state(session: DebugSession):
+    """Inyecta el estado de la sesión web en las variables globales del hardware."""
+    if session.architecture == "single_cycle":
+        sc_reg.rf = list(session.registers)
+        
+        # El hardware de la Tarea asume arreglos de palabras de 32-bits (RAM[64]).
+        # Convertimos nuestro bytearray plano (little-endian) a enteros de 32-bits.
+        sc_imem.RAM = [0] * 64
+        sc_dmem.RAM = [0] * 64
+        for i in range(64):
+            offset = i * 4
+            word = int.from_bytes(session.memory[offset:offset+4], byteorder='little', signed=False)
+            sc_imem.RAM[i] = word
+            sc_dmem.RAM[i] = word
+
+def extract_state(session: DebugSession):
+    """Extrae el estado de las variables globales del hardware de vuelta a la sesión web."""
+    if session.architecture == "single_cycle":
+        session.registers = list(sc_reg.rf)
+        
+        # Re-convertimos la RAM del hardware de vuelta a bytes para el frontend
+        for i in range(64):
+            word = sc_dmem.RAM[i] & 0xFFFFFFFF
+            session.memory[i*4 : i*4+4] = word.to_bytes(4, byteorder='little')
+
+def execute_single_cycle_step(session: DebugSession):
+    """Emula un ciclo de reloj llamando a los módulos del hardware."""
+    Instr = sc_imem.INSTRUCTION_MEMORY(session.pc)
+    
+    # Condición de paro simulada (instrucción 0x0)
+    if Instr == 0:
+        session.is_finished = True
+        return
+        
+    ImmSrc, RegWrite, ALUSrc, ALUControl, MemWrite, ResultSrc, PCSrc = CONTROL_UNIT(Instr)
+    
+    PCNext, ALUResult, WriteData, Zero, ImmExt, a3 = DATAPATH(
+        session.pc, Instr, ImmSrc, ALUSrc, ALUControl, PCSrc
     )
+    
+    ReadData = sc_dmem.DATA_MEMORY(ALUResult, WriteData, MemWrite)
+    Result = MUX2(ALUResult, ReadData, ResultSrc)
+    sc_reg.WRITE_REGISTER_FILE(a3, Result, RegWrite)
+    
+    session.pc = FLOPR(PCNext, 0, width=32)
+    session.steps_executed += 1
 
-
-@router.post("/run", summary="Compila y simula código ensamblador RISC-V")
-def run_code(req: RunRequest):
-    """
-    1. Compila el código ASM con el ensamblador de 2 pasadas.
-    2. Carga el binario en memoria y simula hasta `max_steps` pasos.
-    3. Devuelve registros, snapshot de los primeros 4 KB de memoria y stats.
-    """
-    compilador = CompiladorRISCV()
-    sim        = SimuladorRISCV()
-    bytes_totales = bytearray()
-
-    # ── 1. Compilación ──────────────────────────────────────────────────────
-    try:
-        instrucciones_hex = compilador.compile_program(req.codigo)
-    except Exception as e:
-        raise HTTPException(status_code=400, detail=str(e))
-
-    for hex_str in instrucciones_hex:
-        bytes_crudos = bytes.fromhex(hex_str[2:])[::-1]
-        bytes_totales.extend(bytes_crudos)
-
-    if len(bytes_totales) > len(sim.memoria):
-        raise HTTPException(
-            status_code=400,
-            detail="El programa ensamblado excede la memoria disponible.",
-        )
-
-    if len(bytes_totales) == 0:
-        return {
-            "status": "success",
-            "steps_executed": 0,
-            "hit_limit": False,
-            "registers": [0] * 32,
-            "memory": list(sim.memoria[:MEMORY_SNAPSHOT_BYTES]),
-            "program_size": 0,
-        }
-
-    # ── 2. Carga en memoria ──────────────────────────────────────────────────
-    sim.memoria[0:len(bytes_totales)] = bytes_totales
-    sim.pc = 0
-
-    # ── 3. Ejecución ─────────────────────────────────────────────────────────
-    max_steps = req.max_steps or DEFAULT_MAX_STEPS
-    pasos_ejecutados = 0
-    try:
-        while pasos_ejecutados < max_steps:
-            b0 = sim.memoria[sim.pc]
-            b1 = sim.memoria[sim.pc + 1]
-            b2 = sim.memoria[sim.pc + 2]
-            b3 = sim.memoria[sim.pc + 3]
-            instruccion = (b3 << 24) | (b2 << 16) | (b1 << 8) | b0
-            if instruccion == 0:
-                break
-            sim.step()
-            pasos_ejecutados += 1
-    except Exception as e:
-        raise HTTPException(status_code=400, detail=f"Falla de ejecución en la CPU: {e}")
-
-    terminado_por_limite = pasos_ejecutados == max_steps
-
-    # ── 4. Extracción de resultados ──────────────────────────────────────────
-    registros = [sim.leer_registro(i) for i in range(32)]
-
-    # Snapshot de los primeros MEMORY_SNAPSHOT_BYTES bytes de memoria
-    memory_snapshot = list(sim.memoria[:MEMORY_SNAPSHOT_BYTES])
-
-    return {
-        "status":         "success",
-        "steps_executed": pasos_ejecutados,
-        "hit_limit":      terminado_por_limite,
-        "registers":      registros,
-        "memory":         memory_snapshot,
-        "program_size":   len(bytes_totales),
-    }
-
-# =========================================================
-# ENDPOINTS PARA DEBUG PASO A PASO
-# =========================================================
-
-def extract_state(session: DebugSession, session_id: str):
+def build_response(session: DebugSession, session_id: str = ""):
     return {
         "status": "success",
         "session_id": session_id,
         "steps_executed": session.steps_executed,
-        "hit_limit": False, # En paso a paso no se usa el límite global
+        "hit_limit": False,
         "is_finished": session.is_finished,
-        "registers": [session.sim.leer_registro(i) for i in range(32)],
-        "memory": list(session.sim.memoria[:MEMORY_SNAPSHOT_BYTES]),
+        "registers": list(session.registers),
+        "memory": list(session.memory[:MEMORY_SNAPSHOT_BYTES]),
         "program_size": session.program_size,
     }
 
-@router.post("/debug/start", summary="Inicia una sesión de debug con código ASM")
+# =========================================================
+# ENDPOINTS
+# =========================================================
+
+@router.post("/run", summary="Ejecutar código")
+def run_code(req: RunRequest):
+    raise HTTPException(status_code=400, detail="La Tarea 4 exige ejecutar binarios crudos (.bin). Por favor, usa la opción 'Load .bin File' en el menú File.")
+
+@router.post("/debug/start", summary="Iniciar Debug (Texto)")
 def debug_start(req: RunRequest):
-    compilador = CompiladorRISCV()
-    sim = SimuladorRISCV()
-    bytes_totales = bytearray()
+    raise HTTPException(status_code=400, detail="La Tarea 4 exige ejecutar binarios crudos (.bin). Por favor, usa la opción 'Load .bin File' en el menú File.")
 
-    try:
-        instrucciones_hex = compilador.compile_program(req.codigo)
-    except Exception as e:
-        raise HTTPException(status_code=400, detail=str(e))
-
-    for hex_str in instrucciones_hex:
-        bytes_totales.extend(bytes.fromhex(hex_str[2:])[::-1])
-
-    if len(bytes_totales) > len(sim.memoria):
-        raise HTTPException(status_code=400, detail="Programa excede la memoria.")
-
-    sim.memoria[0:len(bytes_totales)] = bytes_totales
-    sim.pc = 0
-
-    session_id = str(uuid.uuid4())
-    debug_sessions[session_id] = DebugSession(sim, len(bytes_totales))
-    
-    return extract_state(debug_sessions[session_id], session_id)
-
-@router.post("/debug/step/{session_id}", summary="Avanza 1 paso en la sesión")
-def debug_step(session_id: str):
-    if session_id not in debug_sessions:
-        raise HTTPException(status_code=404, detail="Sesión no encontrada o expirada.")
-    
-    session = debug_sessions[session_id]
-    if session.is_finished:
-        return extract_state(session, session_id)
-
-    try:
-        b0 = session.sim.memoria[session.sim.pc]
-        b1 = session.sim.memoria[session.sim.pc + 1]
-        b2 = session.sim.memoria[session.sim.pc + 2]
-        b3 = session.sim.memoria[session.sim.pc + 3]
-        instruccion = (b3 << 24) | (b2 << 16) | (b1 << 8) | b0
-        
-        if instruccion == 0:
-            session.is_finished = True
-        else:
-            session.sim.step()
-            session.steps_executed += 1
-            
-    except Exception as e:
-        session.is_finished = True
-        raise HTTPException(status_code=400, detail=f"Falla de ejecución: {e}")
-
-    return extract_state(session, session_id)
-
-@router.delete("/debug/{session_id}", summary="Termina una sesión de debug")
-def debug_stop(session_id: str):
-    if session_id in debug_sessions:
-        del debug_sessions[session_id]
-    return {"status": "success", "message": "Sesión terminada."}
-
-# =========================================================
-# ENDPOINTS PARA ARCHIVOS .BIN
-# =========================================================
-
-@router.post("/upload_bin", summary="Carga un archivo .bin e inicia sesión de debug")
-def upload_bin(file: UploadFile = File(...)):
+@router.post("/upload_bin", summary="Cargar binario (.bin)")
+def upload_bin(
+    file: UploadFile = File(...),
+    architecture: str = Form("single_cycle")
+):
     if not file.filename.endswith(".bin"):
         raise HTTPException(status_code=400, detail="El archivo debe tener extensión .bin")
     
@@ -203,15 +136,46 @@ def upload_bin(file: UploadFile = File(...)):
     if len(bytes_leidos) == 0:
         raise HTTPException(status_code=400, detail="El archivo está vacío.")
         
-    sim = SimuladorRISCV()
-    if len(bytes_leidos) > len(sim.memoria):
-        raise HTTPException(status_code=400, detail="Programa excede la memoria.")
-        
-    sim.memoria[0:len(bytes_leidos)] = bytes_leidos
-    sim.pc = 0
-
     session_id = str(uuid.uuid4())
-    debug_sessions[session_id] = DebugSession(sim, len(bytes_leidos))
+    session = DebugSession(bytearray(bytes_leidos), architecture)
+    debug_sessions[session_id] = session
     
-    return extract_state(debug_sessions[session_id], session_id)
+    return build_response(session, session_id)
 
+@router.post("/debug/step/{session_id}", summary="Avanzar 1 ciclo de reloj")
+def debug_step(session_id: str):
+    if session_id not in debug_sessions:
+        raise HTTPException(status_code=404, detail="Sesión expirada o no encontrada.")
+        
+    session = debug_sessions[session_id]
+    if session.is_finished:
+        return build_response(session, session_id)
+        
+    try:
+        # Inyectar estado en el hardware
+        inject_state(session)
+        
+        # Ejecutar hardware correspondiente
+        if session.architecture == "single_cycle":
+            execute_single_cycle_step(session)
+        elif session.architecture == "multi_cycle":
+            raise HTTPException(status_code=501, detail="Arquitectura Multi Cycle aún no implementada en hardware.")
+        elif session.architecture == "pipeline":
+            raise HTTPException(status_code=501, detail="Arquitectura Pipeline aún no implementada en hardware.")
+        else:
+            raise HTTPException(status_code=400, detail="Arquitectura desconocida.")
+            
+        # Extraer estado del hardware
+        extract_state(session)
+        
+    except Exception as e:
+        session.is_finished = True
+        raise HTTPException(status_code=400, detail=f"Fallo de hardware crítico: {e}")
+
+    return build_response(session, session_id)
+
+@router.delete("/debug/{session_id}", summary="Terminar sesión")
+def debug_stop(session_id: str):
+    if session_id in debug_sessions:
+        del debug_sessions[session_id]
+    return {"status": "success"}

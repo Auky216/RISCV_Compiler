@@ -1,6 +1,7 @@
 export interface RiscvRunRequest {
   codigo: string;
   max_steps?: number; // 1–100_000, default 10_000
+  architecture?: "single_cycle" | "multi_cycle" | "pipeline";
 }
 
 export interface RiscvRunResponse {

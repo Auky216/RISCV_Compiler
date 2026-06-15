@@ -32,6 +32,7 @@ function IdePage() {
   const [logs, setLogs] = useState<LogEntry[]>([
     { type: "info", message: "RISC-V IDE Ready. Backend connected.", timestamp: new Date().toLocaleTimeString() }
   ]);
+  const [architecture, setArchitecture] = useState<"single_cycle" | "multi_cycle" | "pipeline">("single_cycle");
 
   // State: UI & Settings
   const [activeView, setActiveView] = useState<"editor" | "memory" | "database" | "terminal">("editor");
@@ -62,7 +63,7 @@ function IdePage() {
     
     try {
       const startTime = performance.now();
-      const result = await RiscvService.runCode(code, settings.maxSteps);
+      const result = await RiscvService.runCode(code, settings.maxSteps, architecture);
       const endTime = performance.now();
       
       setModel(result);
@@ -94,7 +95,7 @@ function IdePage() {
     setIsLoading(true);
     addLog({ type: "info", message: "Iniciando sesión de debug interactivo..." });
     try {
-      const result = await RiscvService.startDebugSession(code);
+      const result = await RiscvService.startDebugSession(code, architecture);
       setModel(result);
       setIsDebugging(true);
       addLog({ type: "success", message: `Sesión de debug iniciada (ID: ${result.sessionId}).` });
@@ -131,7 +132,7 @@ function IdePage() {
     setIsLoading(true);
     addLog({ type: "info", message: `Cargando archivo binario: ${file.name}...` });
     try {
-      const result = await RiscvService.uploadBinFile(file);
+      const result = await RiscvService.uploadBinFile(file, architecture);
       setModel(result);
       setIsBinaryMode(true);
       setIsDebugging(true);
@@ -169,6 +170,8 @@ function IdePage() {
         onStep={handleStep}
         onStop={handleStop}
         onUploadBin={handleUploadBin}
+        architecture={architecture}
+        onArchitectureChange={setArchitecture}
       />
 
       <main className="flex flex-1 pt-toolbar-height overflow-hidden">

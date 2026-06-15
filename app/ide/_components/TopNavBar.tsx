@@ -18,6 +18,8 @@ interface TopNavBarProps {
   onStep: () => void;
   onStop: () => void;
   onUploadBin: (file: File) => void;
+  architecture: "single_cycle" | "multi_cycle" | "pipeline";
+  onArchitectureChange: (arch: "single_cycle" | "multi_cycle" | "pipeline") => void;
 }
 
 export function TopNavBar({
@@ -34,6 +36,8 @@ export function TopNavBar({
   onStep,
   onStop,
   onUploadBin,
+  architecture,
+  onArchitectureChange,
 }: TopNavBarProps) {
   const fileInputRef = React.useRef<HTMLInputElement>(null);
 
@@ -136,6 +140,23 @@ export function TopNavBar({
         >
           <span className="material-symbols-outlined">stop</span>
         </button>
+
+        <div className="h-4 w-px bg-outline-variant mx-1" />
+
+        {/* Architecture Selector */}
+        <div className="flex items-center mx-1 border border-outline-variant rounded-sm overflow-hidden bg-surface-container-low h-7">
+          <select
+            value={architecture}
+            onChange={(e) => onArchitectureChange(e.target.value as any)}
+            className="bg-transparent text-body-sm font-body-sm text-on-surface px-2 outline-none cursor-pointer h-full border-none focus:ring-0"
+            disabled={isDebugging || isLoading}
+            title="Seleccionar Arquitectura RISC-V"
+          >
+            <option value="single_cycle">Single Cycle</option>
+            <option value="multi_cycle">Multi Cycle</option>
+            <option value="pipeline">Pipeline</option>
+          </select>
+        </div>
 
         <div className="h-4 w-px bg-outline-variant mx-1" />
 

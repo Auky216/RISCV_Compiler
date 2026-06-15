@@ -9,9 +9,9 @@ export class RiscvService {
    * @param maxSteps Límite de pasos de simulación (1–100_000, default 10_000)
    * @returns RiscvModel con registros, memoria y stats de ejecución
    */
-  static async runCode(codigo: string, maxSteps = 10_000): Promise<RiscvModel> {
+  static async runCode(codigo: string, maxSteps = 10_000, architecture: "single_cycle" | "multi_cycle" | "pipeline" = "single_cycle"): Promise<RiscvModel> {
     try {
-      const payload: RiscvRunRequest = { codigo, max_steps: maxSteps };
+      const payload: RiscvRunRequest = { codigo, max_steps: maxSteps, architecture };
       const response = await https.post<RiscvRunResponse>("/run", payload);
       return new RiscvModel(response.data);
     } catch (error: any) {
@@ -24,9 +24,10 @@ export class RiscvService {
   /**
    * Inicia una sesión interactiva de debug con el código ASM.
    */
-  static async startDebugSession(codigo: string): Promise<RiscvModel> {
+  static async startDebugSession(codigo: string, architecture: "single_cycle" | "multi_cycle" | "pipeline" = "single_cycle"): Promise<RiscvModel> {
     try {
-      const response = await https.post<RiscvRunResponse>("/debug/start", { codigo });
+      const payload: RiscvRunRequest = { codigo, architecture };
+      const response = await https.post<RiscvRunResponse>("/debug/start", payload);
       return new RiscvModel(response.data);
     } catch (error: any) {
       if (error.response?.data?.detail) throw new Error(error.response.data.detail);
@@ -61,10 +62,11 @@ export class RiscvService {
   /**
    * Sube un archivo .bin y comienza una sesión interactiva.
    */
-  static async uploadBinFile(file: File): Promise<RiscvModel> {
+  static async uploadBinFile(file: File, architecture: "single_cycle" | "multi_cycle" | "pipeline" = "single_cycle"): Promise<RiscvModel> {
     try {
       const formData = new FormData();
       formData.append("file", file);
+      formData.append("architecture", architecture);
       
       const response = await https.post<RiscvRunResponse>("/upload_bin", formData, {
         headers: { "Content-Type": "multipart/form-data" },
