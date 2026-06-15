@@ -1,4 +1,4 @@
-from riscv_core import utils
+from . import utils
 
 def encode_instruction(instruccion_ensamblador: str) -> str:
     # Quitamos paréntesis y comas para facilitar la separación de las partes

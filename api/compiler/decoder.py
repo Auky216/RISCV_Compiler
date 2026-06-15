@@ -1,5 +1,5 @@
-from riscv_core import utils
-from riscv_core import formats
+from . import utils
+from . import formats
 
 def decode_instruction(texto_hexadecimal: str) -> str:
     binario_32_bits = utils.hex_a_binario_32_bits(texto_hexadecimal)

@@ -27,20 +27,24 @@ from riscv_core.single_cycle.datapath import DATAPATH
 from riscv_core.single_cycle.flopr import FLOPR
 from riscv_core.single_cycle.mux2 import MUX2
 
+from compiler.compiler import CompiladorRISCV
+
 router = APIRouter(prefix="", tags=["RISC-V"])
 
 DEFAULT_MAX_STEPS = 10_000
 MEMORY_SNAPSHOT_BYTES = 4096
 
 class DebugSession:
-    def __init__(self, program_bytes: bytearray, architecture: str):
+    def __init__(self, program_bytes: bytearray, architecture: str, pc_to_line_map: dict = None):
         self.architecture = architecture
         self.program_size = len(program_bytes)
         self.steps_executed = 0
         self.is_finished = False
         self.pc = 0
+        self.pc_to_line_map = pc_to_line_map or {}
         self.registers = [0] * 32
         self.memory = bytearray(8192) # 8KB de memoria para el backend
+        self.history = [] # Historial para poder retroceder
         
         # Copiamos el programa al inicio de la memoria
         size = min(len(program_bytes), len(self.memory))
@@ -110,6 +114,8 @@ def build_response(session: DebugSession, session_id: str = ""):
         "registers": list(session.registers),
         "memory": list(session.memory[:MEMORY_SNAPSHOT_BYTES]),
         "program_size": session.program_size,
+        "pc": session.pc,
+        "current_line": session.pc_to_line_map.get(session.pc, None)
     }
 
 # =========================================================
@@ -118,11 +124,57 @@ def build_response(session: DebugSession, session_id: str = ""):
 
 @router.post("/run", summary="Ejecutar código")
 def run_code(req: RunRequest):
-    raise HTTPException(status_code=400, detail="La Tarea 4 exige ejecutar binarios crudos (.bin). Por favor, usa la opción 'Load .bin File' en el menú File.")
+    compilador = CompiladorRISCV()
+    try:
+        instrucciones_hex, pc_to_line = compilador.compile_program(req.codigo)
+    except Exception as e:
+        raise HTTPException(status_code=400, detail=str(e))
+        
+    bytes_totales = bytearray()
+    for hex_str in instrucciones_hex:
+        bytes_totales.extend(bytes.fromhex(hex_str[2:])[::-1])
+        
+    session = DebugSession(bytes_totales, req.architecture, pc_to_line)
+    max_steps = req.max_steps or DEFAULT_MAX_STEPS
+    
+    try:
+        inject_state(session)
+        while session.steps_executed < max_steps and not session.is_finished:
+            if session.architecture == "single_cycle":
+                execute_single_cycle_step(session)
+            elif session.architecture == "multi_cycle":
+                raise HTTPException(status_code=501, detail="Arquitectura Multi Cycle aún no implementada en hardware.")
+            elif session.architecture == "pipeline":
+                raise HTTPException(status_code=501, detail="Arquitectura Pipeline aún no implementada en hardware.")
+            else:
+                raise HTTPException(status_code=400, detail="Arquitectura desconocida.")
+        extract_state(session)
+    except Exception as e:
+        raise HTTPException(status_code=400, detail=f"Fallo de ejecución en la CPU: {e}")
+        
+    terminado_por_limite = session.steps_executed == max_steps
+    
+    response = build_response(session, "")
+    response["hit_limit"] = terminado_por_limite
+    return response
 
 @router.post("/debug/start", summary="Iniciar Debug (Texto)")
 def debug_start(req: RunRequest):
-    raise HTTPException(status_code=400, detail="La Tarea 4 exige ejecutar binarios crudos (.bin). Por favor, usa la opción 'Load .bin File' en el menú File.")
+    compilador = CompiladorRISCV()
+    try:
+        instrucciones_hex, pc_to_line = compilador.compile_program(req.codigo)
+    except Exception as e:
+        raise HTTPException(status_code=400, detail=str(e))
+        
+    bytes_totales = bytearray()
+    for hex_str in instrucciones_hex:
+        bytes_totales.extend(bytes.fromhex(hex_str[2:])[::-1])
+        
+    session_id = str(uuid.uuid4())
+    session = DebugSession(bytes_totales, req.architecture, pc_to_line)
+    debug_sessions[session_id] = session
+    
+    return build_response(session, session_id)
 
 @router.post("/upload_bin", summary="Cargar binario (.bin)")
 def upload_bin(
@@ -142,36 +194,53 @@ def upload_bin(
     
     return build_response(session, session_id)
 
-@router.post("/debug/step/{session_id}", summary="Avanzar 1 ciclo de reloj")
-def debug_step(session_id: str):
-    if session_id not in debug_sessions:
-        raise HTTPException(status_code=404, detail="Sesión expirada o no encontrada.")
+@router.post("/debug/step/{session_id}")
+def step_debug_session(session_id: str):
+    session = debug_sessions.get(session_id)
+    if not session:
+        raise HTTPException(status_code=404, detail="Debug session not found")
         
-    session = debug_sessions[session_id]
     if session.is_finished:
         return build_response(session, session_id)
         
     try:
-        # Inyectar estado en el hardware
-        inject_state(session)
+        # Guardar estado actual en el historial antes de ejecutar el paso
+        session.history.append({
+            "pc": session.pc,
+            "steps_executed": session.steps_executed,
+            "registers": list(session.registers),
+            "memory": bytearray(session.memory),
+            "is_finished": session.is_finished
+        })
         
-        # Ejecutar hardware correspondiente
+        inject_state(session)
         if session.architecture == "single_cycle":
             execute_single_cycle_step(session)
-        elif session.architecture == "multi_cycle":
-            raise HTTPException(status_code=501, detail="Arquitectura Multi Cycle aún no implementada en hardware.")
-        elif session.architecture == "pipeline":
-            raise HTTPException(status_code=501, detail="Arquitectura Pipeline aún no implementada en hardware.")
-        else:
-            raise HTTPException(status_code=400, detail="Arquitectura desconocida.")
-            
-        # Extraer estado del hardware
         extract_state(session)
         
     except Exception as e:
         session.is_finished = True
         raise HTTPException(status_code=400, detail=f"Fallo de hardware crítico: {e}")
 
+    return build_response(session, session_id)
+
+@router.post("/debug/step_back/{session_id}")
+def step_back_debug_session(session_id: str):
+    session = debug_sessions.get(session_id)
+    if not session:
+        raise HTTPException(status_code=404, detail="Debug session not found")
+        
+    if not session.history:
+        return build_response(session, session_id)
+        
+    # Restaurar el estado anterior
+    last_state = session.history.pop()
+    session.pc = last_state["pc"]
+    session.steps_executed = last_state["steps_executed"]
+    session.registers = last_state["registers"]
+    session.memory = last_state["memory"]
+    session.is_finished = last_state["is_finished"]
+    
     return build_response(session, session_id)
 
 @router.delete("/debug/{session_id}", summary="Terminar sesión")

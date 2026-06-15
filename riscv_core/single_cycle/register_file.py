@@ -19,7 +19,8 @@ def READ_REGISTER_FILE(a1, a2):
 def WRITE_REGISTER_FILE(a3, wd3, we3):
     
         # El registro cero (x0) siempre debe valer 0 y no se puede sobreescribir
-        if a3 != 0:
+        # Solo escribimos si el Write Enable (we3) está activo
+        if we3 == 1 and a3 != 0:
             rf[a3] = wd3
 
 def REGISTER_FILE(a1, a2, a3, wd3, we3):

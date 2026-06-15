@@ -16,6 +16,8 @@ export class RiscvModel {
   public programSize: number;
   public sessionId?: string;
   public isFinished?: boolean;
+  public pc?: number;
+  public currentLine?: number;
 
   constructor(data: RiscvRunResponse) {
     this.status       = data.status;
@@ -26,6 +28,8 @@ export class RiscvModel {
     this.programSize  = data.program_size || 0;
     this.sessionId    = data.session_id;
     this.isFinished   = data.is_finished;
+    this.pc           = data.pc;
+    this.currentLine  = data.current_line;
   }
 
   /** Nombre ABI del registro (ej. "a0", "sp") */

@@ -120,6 +120,16 @@ function IdePage() {
     }
   };
 
+  const handleStepBack = async () => {
+    if (!model?.sessionId) return;
+    try {
+      const result = await RiscvService.stepBackSession(model.sessionId);
+      setModel(result);
+    } catch (error: any) {
+      addLog({ type: "error", message: error.message });
+    }
+  };
+
   const handleStop = async () => {
     if (model?.sessionId) {
       await RiscvService.stopSession(model.sessionId);
@@ -168,6 +178,7 @@ function IdePage() {
         isDebugging={isDebugging}
         onDebugStart={handleDebugStart}
         onStep={handleStep}
+        onStepBack={handleStepBack}
         onStop={handleStop}
         onUploadBin={handleUploadBin}
         architecture={architecture}
@@ -181,7 +192,13 @@ function IdePage() {
           <div className="flex flex-1 overflow-hidden">
             {/* Main Area: currently only Editor is active */}
             {activeView === "editor" && (
-              <CodeEditor code={code} onChange={setCode} fontSize={settings.fontSize} isBinaryMode={isBinaryMode} />
+              <CodeEditor 
+                code={code} 
+                onChange={setCode} 
+                fontSize={settings.fontSize} 
+                isBinaryMode={isBinaryMode}
+                currentLine={model?.currentLine} 
+              />
             )}
 
             {/* Right Panel: Registers or Memory Map */}

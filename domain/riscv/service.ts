@@ -49,6 +49,19 @@ export class RiscvService {
   }
 
   /**
+   * Retrocede 1 paso en la sesión interactiva.
+   */
+  static async stepBackSession(sessionId: string): Promise<RiscvModel> {
+    try {
+      const response = await https.post<RiscvRunResponse>(`/debug/step_back/${sessionId}`, {});
+      return new RiscvModel(response.data);
+    } catch (error: any) {
+      if (error.response?.data?.detail) throw new Error(error.response.data.detail);
+      throw error;
+    }
+  }
+
+  /**
    * Termina la sesión y libera memoria en el backend.
    */
   static async stopSession(sessionId: string): Promise<void> {

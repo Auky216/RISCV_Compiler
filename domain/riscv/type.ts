@@ -15,4 +15,6 @@ export interface RiscvRunResponse {
   // Nuevos campos para sesión de debug
   session_id?: string;
   is_finished?: boolean;
+  pc?: number;
+  current_line?: number;
 }

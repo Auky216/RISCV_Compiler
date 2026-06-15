@@ -16,6 +16,7 @@ interface TopNavBarProps {
   isDebugging: boolean;
   onDebugStart: () => void;
   onStep: () => void;
+  onStepBack: () => void;
   onStop: () => void;
   onUploadBin: (file: File) => void;
   architecture: "single_cycle" | "multi_cycle" | "pipeline";
@@ -34,6 +35,7 @@ export function TopNavBar({
   isDebugging,
   onDebugStart,
   onStep,
+  onStepBack,
   onStop,
   onUploadBin,
   architecture,
@@ -114,6 +116,19 @@ export function TopNavBar({
           <span>{isLoading ? "Running..." : "Run"}</span>
         </button>
 
+        {/* Step Back */}
+        {isDebugging && (
+          <button
+            onClick={onStepBack}
+            disabled={isLoading || model?.stepsExecuted === 0}
+            className={`flex items-center gap-1 px-2 py-0.5 border font-body-sm text-body-sm transition-all border-primary text-primary hover:bg-primary/10 ${isLoading || model?.stepsExecuted === 0 ? "opacity-40 cursor-not-allowed" : ""}`}
+            title="Retroceder (Step Back)"
+          >
+            <span className="material-symbols-outlined">step_out</span>
+            <span>Back</span>
+          </button>
+        )}
+
         {/* Step */}
         <button
           onClick={isDebugging ? onStep : onDebugStart}
@@ -129,17 +144,28 @@ export function TopNavBar({
           <span>{isDebugging ? "Step" : "Debug"}</span>
         </button>
 
-        {/* Stop / Pause */}
-        <button
-          onClick={onStop}
-          className={`p-1 transition-colors ${
-            isDebugging ? "text-error hover:bg-error/10" : "text-on-surface-variant opacity-40 cursor-not-allowed"
-          }`}
-          disabled={!isDebugging}
-          title="Terminar sesión de debug"
-        >
-          <span className="material-symbols-outlined">stop</span>
-        </button>
+        {/* Stop / Restart */}
+        {isDebugging && model?.isFinished ? (
+          <button
+            onClick={onReset}
+            className="flex items-center gap-1 px-2 py-0.5 font-body-sm text-body-sm transition-colors text-primary hover:bg-primary/10"
+            title="Volver a empezar (Restart)"
+          >
+            <span className="material-symbols-outlined text-[18px]">restart_alt</span>
+            Restart
+          </button>
+        ) : (
+          <button
+            onClick={onStop}
+            className={`p-1 transition-colors ${
+              isDebugging ? "text-error hover:bg-error/10" : "text-on-surface-variant opacity-40 cursor-not-allowed"
+            }`}
+            disabled={!isDebugging}
+            title="Terminar sesión de debug"
+          >
+            <span className="material-symbols-outlined">stop</span>
+          </button>
+        )}
 
         <div className="h-4 w-px bg-outline-variant mx-1" />
 

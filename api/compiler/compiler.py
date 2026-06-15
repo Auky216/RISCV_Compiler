@@ -1,5 +1,5 @@
-from riscv_core import decoder
-from riscv_core import encoder
+from . import decoder
+from . import encoder
 
 class CompiladorRISCV:
     def decode_instruction(self, hexa: str):
@@ -8,12 +8,12 @@ class CompiladorRISCV:
     def encode_instruction(self, asm: str):
         return encoder.encode_instruction(asm)
 
-    def compile_program(self, code: str) -> list[str]:
+    def compile_program(self, code: str) -> tuple[list[str], dict[int, int]]:
         """
         Ensamblador de 2 pasadas:
         - Pasada 1: Resuelve etiquetas y calcula el tamaño real del programa.
         - Pasada 2: Codifica las instrucciones, reemplazando etiquetas por offsets relativos.
-        Retorna una lista de strings en Hexadecimal.
+        Retorna (lista_instrucciones_hex, mapa_pc_a_linea_original).
         """
         import re
         lines = code.split('\n')
@@ -47,7 +47,9 @@ class CompiladorRISCV:
             
         # Pasada 2: Codificación
         hex_instructions = []
+        pc_to_line = {}
         for orig_line_num, instr_pc, instr_text in valid_instructions:
+            pc_to_line[instr_pc] = orig_line_num
             texto_modificado = instr_text
             for sym_name, sym_pc in symbols.items():
                 # Buscamos la etiqueta como palabra exacta para evitar falsos positivos
@@ -62,4 +64,4 @@ class CompiladorRISCV:
                 
             hex_instructions.append(hex_str)
             
-        return hex_instructions
+        return hex_instructions, pc_to_line
