@@ -17,4 +17,5 @@ export interface RiscvRunResponse {
   is_finished?: boolean;
   pc?: number;
   current_line?: number;
+  control_signals?: Record<string, number>;
 }

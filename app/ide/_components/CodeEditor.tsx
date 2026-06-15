@@ -56,23 +56,21 @@ function SyntaxHighlightedLine({ line }: { line: string }) {
   const commentIdx1 = line.indexOf("#");
   const commentIdx2 = line.indexOf("//");
   let commentIdx = -1;
-
-  if (commentIdx1 !== -1 && commentIdx2 !== -1) {
-    commentIdx = Math.min(commentIdx1, commentIdx2);
-  } else {
-    commentIdx = Math.max(commentIdx1, commentIdx2);
-  }
+  if (commentIdx1 !== -1 && commentIdx2 !== -1) commentIdx = Math.min(commentIdx1, commentIdx2);
+  else if (commentIdx1 !== -1) commentIdx = commentIdx1;
+  else if (commentIdx2 !== -1) commentIdx = commentIdx2;
 
   if (commentIdx !== -1) {
     const codePart = line.substring(0, commentIdx);
     const commentPart = line.substring(commentIdx);
     return (
       <>
-        <HighlightedCodePart text={codePart} />
-        <span className="text-[#008000] italic">{commentPart}</span>
+        {codePart ? <HighlightedCodePart text={codePart} /> : null}
+        <span className="text-tertiary italic">{commentPart}</span>
       </>
     );
   }
+
   return <HighlightedCodePart text={line} />;
 }
 
@@ -134,6 +132,7 @@ export function CodeEditor({ code, onChange, fontSize = "md", isBinaryMode = fal
               <div 
                 key={i} 
                 className={`flex justify-end items-center px-2 ${isCurrent ? "bg-primary/20 text-primary font-bold shadow-[inset_2px_0_0_0_rgba(var(--color-primary),1)]" : "pr-3"}`}
+                style={{ height: lineH }}
               >
                 {isCurrent && <span className="text-[10px] mr-1">►</span>}
                 {i + 1}
@@ -174,9 +173,10 @@ export function CodeEditor({ code, onChange, fontSize = "md", isBinaryMode = fal
               style={{ lineHeight: lineH, fontSize: text }}
             >
               {lines.map((line, i) => (
-                <div key={i} className="min-h-[1em]">
+                <React.Fragment key={i}>
                   <SyntaxHighlightedLine line={line} />
-                </div>
+                  {i < lines.length - 1 ? "\n" : ""}
+                </React.Fragment>
               ))}
             </pre>
 
@@ -186,14 +186,14 @@ export function CodeEditor({ code, onChange, fontSize = "md", isBinaryMode = fal
               value={code}
               onChange={(e) => onChange(e.target.value)}
               onScroll={handleScroll}
-              className="absolute inset-0 m-0 py-4 px-4 bg-transparent resize-none outline-none text-transparent caret-primary w-full h-full overflow-auto z-10"
-              style={{ lineHeight: lineH, fontSize: text }}
               spellCheck={false}
               autoComplete="off"
               autoCorrect="off"
               autoCapitalize="off"
               wrap="off"
               onKeyDown={handleKeyDown}
+              className="absolute inset-0 m-0 py-4 px-4 bg-transparent resize-none outline-none text-transparent caret-primary w-full h-full overflow-auto z-10 whitespace-pre"
+              style={{ lineHeight: lineH, fontSize: text }}
               aria-label="RISC-V assembler code editor"
             />
           </div>

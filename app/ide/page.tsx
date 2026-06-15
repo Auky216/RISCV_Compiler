@@ -13,6 +13,7 @@ import { SideRail } from "./_components/SideRail";
 import { CodeEditor } from "./_components/CodeEditor";
 import { RegisterPanel } from "./_components/RegisterPanel";
 import { MemoryMapPanel } from "./_components/MemoryMapPanel";
+import { DatapathPanel } from "./_components/DatapathPanel";
 import { ConsolePanel } from "./_components/ConsolePanel";
 import { SettingsModal } from "./_components/SettingsModal";
 import { IdeSettings, DEFAULT_SETTINGS, LogEntry } from "./_components/types";
@@ -36,7 +37,7 @@ function IdePage() {
 
   // State: UI & Settings
   const [activeView, setActiveView] = useState<"editor" | "memory" | "database" | "terminal">("editor");
-  const [rightPanelTab, setRightPanelTab] = useState<"registers" | "memoryMap">("registers");
+  const [activeTab, setActiveTab] = useState<"registers" | "memory" | "datapath">("registers");
   const [settings, setSettings] = useState<IdeSettings>(DEFAULT_SETTINGS);
   const [isSettingsOpen, setIsSettingsOpen] = useState(false);
 
@@ -203,40 +204,52 @@ function IdePage() {
 
             {/* Right Panel: Registers or Memory Map */}
             <section className="w-2/5 flex flex-col bg-surface-container-low border-l border-outline-variant">
-              {/* Tab Header */}
-              <div className="flex h-8 bg-surface-container border-b border-outline-variant flex-shrink-0">
+              {/* Tabs */}
+              <div className="flex items-center gap-4 px-4 bg-surface-container-low border-b border-outline-variant h-10 shrink-0">
                 <button
-                  onClick={() => setRightPanelTab("registers")}
-                  className={`px-4 h-full flex items-center gap-2 transition-colors ${
-                    rightPanelTab === "registers"
-                      ? "border-t-2 border-primary bg-surface-container-low text-primary"
-                      : "text-on-surface-variant hover:bg-surface-container-high opacity-70 hover:opacity-100"
+                  onClick={() => setActiveTab("registers")}
+                  className={`font-label-md text-label-md transition-colors h-full px-2 border-b-2 ${
+                    activeTab === "registers"
+                      ? "text-primary border-primary"
+                      : "text-on-surface-variant border-transparent hover:text-on-surface"
                   }`}
                 >
-                  <span className="font-label-caps text-label-caps">REGISTERS</span>
+                  REGISTERS
                 </button>
                 <button
-                  onClick={() => setRightPanelTab("memoryMap")}
-                  className={`px-4 h-full flex items-center gap-2 transition-colors ${
-                    rightPanelTab === "memoryMap"
-                      ? "border-t-2 border-primary bg-surface-container-low text-primary"
-                      : "text-on-surface-variant hover:bg-surface-container-high opacity-70 hover:opacity-100"
+                  onClick={() => setActiveTab("memory")}
+                  className={`font-label-md text-label-md transition-colors h-full px-2 border-b-2 ${
+                    activeTab === "memory"
+                      ? "text-primary border-primary"
+                      : "text-on-surface-variant border-transparent hover:text-on-surface"
                   }`}
                 >
-                  <span className="font-label-caps text-label-caps">MEMORY MAP</span>
+                  MEMORY MAP
+                </button>
+                <button
+                  onClick={() => setActiveTab("datapath")}
+                  className={`font-label-md text-label-md transition-colors h-full px-2 border-b-2 ${
+                    activeTab === "datapath"
+                      ? "text-primary border-primary"
+                      : "text-on-surface-variant border-transparent hover:text-on-surface"
+                  }`}
+                >
+                  DATAPATH
                 </button>
               </div>
 
-              {/* Panel Content */}
-              {rightPanelTab === "registers" ? (
-                <RegisterPanel
-                  model={model}
-                  displayFormat={settings.displayFormat}
-                  showZeroRegisters={settings.showZeroRegisters}
-                />
-              ) : (
-                <MemoryMapPanel model={model} />
-              )}
+              {/* Tab content */}
+              <div className="flex-1 overflow-hidden flex flex-col">
+                {activeTab === "registers" && (
+                  <RegisterPanel
+                    model={model}
+                    displayFormat={settings.displayFormat}
+                    showZeroRegisters={settings.showZeroRegisters}
+                  />
+                )}
+                {activeTab === "memory" && <MemoryMapPanel model={model} />}
+                {activeTab === "datapath" && <DatapathPanel model={model} />}
+              </div>
             </section>
           </div>
 

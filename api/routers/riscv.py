@@ -45,6 +45,7 @@ class DebugSession:
         self.registers = [0] * 32
         self.memory = bytearray(8192) # 8KB de memoria para el backend
         self.history = [] # Historial para poder retroceder
+        self.control_signals = {} # Para iluminar el SVG Datapath
         
         # Copiamos el programa al inicio de la memoria
         size = min(len(program_bytes), len(self.memory))
@@ -101,6 +102,25 @@ def execute_single_cycle_step(session: DebugSession):
     Result = MUX2(ALUResult, ReadData, ResultSrc)
     sc_reg.WRITE_REGISTER_FILE(a3, Result, RegWrite)
     
+    session.control_signals = {
+        "ImmSrc": ImmSrc,
+        "RegWrite": RegWrite,
+        "ALUSrc": ALUSrc,
+        "ALUControl": ALUControl,
+        "MemWrite": MemWrite,
+        "ResultSrc": ResultSrc,
+        "PCSrc": PCSrc,
+        "Zero": Zero,
+        "Instr": Instr,
+        "ImmExt": ImmExt,
+        "ALUResult": ALUResult,
+        "WriteData": WriteData,
+        "ReadData": ReadData,
+        "Result": Result,
+        "PCNext": PCNext,
+        "PCTarget": session.pc + ImmExt
+    }
+    
     session.pc = FLOPR(PCNext, 0, width=32)
     session.steps_executed += 1
 
@@ -115,7 +135,8 @@ def build_response(session: DebugSession, session_id: str = ""):
         "memory": list(session.memory[:MEMORY_SNAPSHOT_BYTES]),
         "program_size": session.program_size,
         "pc": session.pc,
-        "current_line": session.pc_to_line_map.get(session.pc, None)
+        "current_line": session.pc_to_line_map.get(session.pc, None),
+        "control_signals": session.control_signals
     }
 
 # =========================================================
@@ -210,7 +231,8 @@ def step_debug_session(session_id: str):
             "steps_executed": session.steps_executed,
             "registers": list(session.registers),
             "memory": bytearray(session.memory),
-            "is_finished": session.is_finished
+            "is_finished": session.is_finished,
+            "control_signals": dict(session.control_signals)
         })
         
         inject_state(session)
@@ -240,6 +262,7 @@ def step_back_debug_session(session_id: str):
     session.registers = last_state["registers"]
     session.memory = last_state["memory"]
     session.is_finished = last_state["is_finished"]
+    session.control_signals = last_state.get("control_signals", {})
     
     return build_response(session, session_id)
 

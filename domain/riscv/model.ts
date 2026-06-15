@@ -18,6 +18,7 @@ export class RiscvModel {
   public isFinished?: boolean;
   public pc?: number;
   public currentLine?: number;
+  public controlSignals: Record<string, number> | null;
 
   constructor(data: RiscvRunResponse) {
     this.status       = data.status;
@@ -30,6 +31,7 @@ export class RiscvModel {
     this.isFinished   = data.is_finished;
     this.pc           = data.pc;
     this.currentLine  = data.current_line;
+    this.controlSignals = data.control_signals ?? null;
   }
 
   /** Nombre ABI del registro (ej. "a0", "sp") */
