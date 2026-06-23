@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useRef } from "react";
+import React, { useRef, useEffect } from "react";
 
 interface CodeEditorProps {
   code: string;
@@ -79,6 +79,31 @@ export function CodeEditor({ code, onChange, fontSize = "md", isBinaryMode = fal
   const { text, lineH } = FONT_SIZE_MAP[fontSize];
   const syntaxRef = useRef<HTMLPreElement>(null);
   const textareaRef = useRef<HTMLTextAreaElement>(null);
+  const lineNumbersRef = useRef<HTMLDivElement>(null);
+  const highlightRef = useRef<HTMLDivElement>(null);
+
+  // Auto-scroll para seguir la línea actual durante el debug
+  useEffect(() => {
+    if (currentLine && textareaRef.current) {
+      const textarea = textareaRef.current;
+      const lineHeight = parseInt(lineH);
+      const targetY = (currentLine - 1) * lineHeight;
+      const visibleTop = textarea.scrollTop;
+      const visibleBottom = visibleTop + textarea.clientHeight;
+      
+      // Si la línea actual se sale de la vista (dejamos un margen de 2 líneas)
+      if (targetY < visibleTop + lineHeight * 2 || targetY > visibleBottom - lineHeight * 3) {
+        // Hacemos scroll para centrar la línea
+        const newScrollTop = Math.max(0, targetY - textarea.clientHeight / 2);
+        textarea.scrollTop = newScrollTop;
+        
+        // Sincronizar las demás capas
+        if (syntaxRef.current) syntaxRef.current.scrollTop = newScrollTop;
+        if (lineNumbersRef.current) lineNumbersRef.current.scrollTop = newScrollTop;
+        if (highlightRef.current) highlightRef.current.scrollTop = newScrollTop;
+      }
+    }
+  }, [currentLine, lineH]);
 
   const handleKeyDown = (e: React.KeyboardEvent<HTMLTextAreaElement>) => {
     if (e.key === "Tab") {
@@ -102,6 +127,12 @@ export function CodeEditor({ code, onChange, fontSize = "md", isBinaryMode = fal
       syntaxRef.current.scrollTop = e.currentTarget.scrollTop;
       syntaxRef.current.scrollLeft = e.currentTarget.scrollLeft;
     }
+    if (lineNumbersRef.current) {
+      lineNumbersRef.current.scrollTop = e.currentTarget.scrollTop;
+    }
+    if (highlightRef.current) {
+      highlightRef.current.scrollTop = e.currentTarget.scrollTop;
+    }
   };
 
   return (
@@ -122,6 +153,7 @@ export function CodeEditor({ code, onChange, fontSize = "md", isBinaryMode = fal
       >
         {/* Line numbers */}
         <div
+          ref={lineNumbersRef}
           className="w-12 bg-surface-container-low text-right py-4 text-outline select-none border-r border-outline-variant overflow-hidden flex-shrink-0 relative z-10"
           style={{ lineHeight: lineH }}
           aria-hidden="true"
@@ -143,16 +175,24 @@ export function CodeEditor({ code, onChange, fontSize = "md", isBinaryMode = fal
 
         {/* Textarea Area */}
         <div className="flex-1 relative overflow-hidden flex flex-col">
-          {/* Highlight Background for executing line */}
-          {!isBinaryMode && currentLine && currentLine > 0 && currentLine <= lines.length && (
-            <div 
-              className="absolute left-0 right-0 bg-[#eab308]/30 pointer-events-none transition-all duration-200 ease-out z-0"
-              style={{
-                top: `calc(1rem + ${(currentLine - 1)} * ${lineH})`,
-                height: lineH,
-              }}
-            />
-          )}
+          {/* Highlight Container */}
+          <div 
+            ref={highlightRef}
+            aria-hidden="true"
+            className="absolute inset-0 m-0 py-4 px-4 overflow-hidden pointer-events-none z-0"
+          >
+            <div style={{ height: `calc(${lines.length} * ${lineH})`, position: 'relative' }}>
+              {!isBinaryMode && currentLine && currentLine > 0 && currentLine <= lines.length && (
+                <div 
+                  className="absolute left-[-16px] right-[-16px] bg-[#eab308]/30 transition-all duration-200 ease-out"
+                  style={{
+                    top: `calc(${(currentLine - 1)} * ${lineH})`,
+                    height: lineH,
+                  }}
+                />
+              )}
+            </div>
+          </div>
 
         {isBinaryMode ? (
           <div className="flex-1 py-8 px-4 flex flex-col items-center justify-center text-on-surface-variant opacity-70">

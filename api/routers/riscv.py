@@ -19,13 +19,13 @@ if str(single_cycle_dir) not in sys.path:
     sys.path.insert(0, str(single_cycle_dir))
 
 # Importamos los modulos del hardware "como son"
-import riscv_core.single_cycle.data_memory as sc_dmem
-import riscv_core.single_cycle.instruction_memory as sc_imem
-import riscv_core.single_cycle.register_file as sc_reg
-from riscv_core.single_cycle.control_unit import CONTROL_UNIT
-from riscv_core.single_cycle.datapath import DATAPATH
-from riscv_core.single_cycle.flopr import FLOPR
-from riscv_core.single_cycle.mux2 import MUX2
+import data_memory as sc_dmem
+import instruction_memory as sc_imem
+import register_file as sc_reg
+from control_unit import CONTROL_UNIT
+from datapath import DATAPATH
+from flopr import FLOPR
+from mux2 import MUX2
 
 from compiler.compiler import CompiladorRISCV
 
@@ -64,24 +64,24 @@ def inject_state(session: DebugSession):
         sc_reg.rf = list(session.registers)
         
         # El hardware de la Tarea asume arreglos de palabras de 32-bits (RAM[64]).
-        # Convertimos nuestro bytearray plano (little-endian) a enteros de 32-bits.
         sc_imem.RAM = [0] * 64
-        sc_dmem.RAM = [0] * 64
         for i in range(64):
             offset = i * 4
             word = int.from_bytes(session.memory[offset:offset+4], byteorder='little', signed=False)
             sc_imem.RAM[i] = word
-            sc_dmem.RAM[i] = word
+            
+        # Data memory usa bytearray
+        sc_dmem.RAM = bytearray(session.memory)
 
 def extract_state(session: DebugSession):
     """Extrae el estado de las variables globales del hardware de vuelta a la sesión web."""
     if session.architecture == "single_cycle":
         session.registers = list(sc_reg.rf)
         
-        # Re-convertimos la RAM del hardware de vuelta a bytes para el frontend
-        for i in range(64):
-            word = sc_dmem.RAM[i] & 0xFFFFFFFF
-            session.memory[i*4 : i*4+4] = word.to_bytes(4, byteorder='little')
+        # Copiar directamente del bytearray
+        size = min(len(session.memory), len(sc_dmem.RAM))
+        session.memory[:size] = sc_dmem.RAM[:size]
+
 
 def execute_single_cycle_step(session: DebugSession):
     """Emula un ciclo de reloj llamando a los módulos del hardware."""
@@ -92,14 +92,22 @@ def execute_single_cycle_step(session: DebugSession):
         session.is_finished = True
         return
         
-    ImmSrc, RegWrite, ALUSrc, ALUControl, MemWrite, ResultSrc, PCSrc = CONTROL_UNIT(Instr)
+    ImmSrc, RegWrite, ALUSrc, ALUControl, MemWrite, ResultSrc, Jump, BranchType = CONTROL_UNIT(Instr)
     
-    PCNext, ALUResult, WriteData, Zero, ImmExt, a3 = DATAPATH(
-        session.pc, Instr, ImmSrc, ALUSrc, ALUControl, PCSrc
+    PCNext, ALUResult, WriteData, Zero, ImmExt, a3, PCPlus4, PCTarget, PCSrc = DATAPATH(
+        session.pc, Instr, ImmSrc, ALUSrc, ALUControl, ResultSrc, Jump, BranchType
     )
     
-    ReadData = sc_dmem.DATA_MEMORY(ALUResult, WriteData, MemWrite)
-    Result = MUX2(ALUResult, ReadData, ResultSrc)
+    funct3 = (Instr >> 12) & 0x7
+    ReadData = sc_dmem.DATA_MEMORY(ALUResult, WriteData, MemWrite, funct3)
+    
+    if ResultSrc == 0: Result = ALUResult
+    elif ResultSrc == 1: Result = ReadData
+    elif ResultSrc == 2: Result = PCPlus4
+    elif ResultSrc == 3: Result = ImmExt
+    elif ResultSrc == 4: Result = PCTarget
+    else: Result = ALUResult
+    
     sc_reg.WRITE_REGISTER_FILE(a3, Result, RegWrite)
     
     session.pc = FLOPR(PCNext, 0, width=32)
@@ -116,12 +124,20 @@ def peek_control_signals(session: DebugSession):
     if Instr == 0:
         return {}
         
-    ImmSrc, RegWrite, ALUSrc, ALUControl, MemWrite, ResultSrc, PCSrc = CONTROL_UNIT(Instr)
-    PCNext, ALUResult, WriteData, Zero, ImmExt, a3 = DATAPATH(
-        session.pc, Instr, ImmSrc, ALUSrc, ALUControl, PCSrc
+    ImmSrc, RegWrite, ALUSrc, ALUControl, MemWrite, ResultSrc, Jump, BranchType = CONTROL_UNIT(Instr)
+    PCNext, ALUResult, WriteData, Zero, ImmExt, a3, PCPlus4, PCTarget, PCSrc = DATAPATH(
+        session.pc, Instr, ImmSrc, ALUSrc, ALUControl, ResultSrc, Jump, BranchType
     )
-    ReadData = sc_dmem.DATA_MEMORY(ALUResult, WriteData, MemWrite)
-    Result = MUX2(ALUResult, ReadData, ResultSrc)
+    
+    funct3 = (Instr >> 12) & 0x7
+    ReadData = sc_dmem.DATA_MEMORY(ALUResult, WriteData, MemWrite, funct3)
+    
+    if ResultSrc == 0: Result = ALUResult
+    elif ResultSrc == 1: Result = ReadData
+    elif ResultSrc == 2: Result = PCPlus4
+    elif ResultSrc == 3: Result = ImmExt
+    elif ResultSrc == 4: Result = PCTarget
+    else: Result = ALUResult
     
     return {
         "ImmSrc": ImmSrc,
@@ -139,7 +155,7 @@ def peek_control_signals(session: DebugSession):
         "ReadData": ReadData,
         "Result": Result,
         "PCNext": PCNext,
-        "PCTarget": session.pc + ImmExt
+        "PCTarget": PCTarget
     }
 
 def build_response(session: DebugSession, session_id: str = ""):

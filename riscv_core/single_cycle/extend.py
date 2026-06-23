@@ -27,6 +27,10 @@ def EXTEND(Instr, immsrc):
         # instr[30:21] -> bits[1:11]
         ext = (signo * 12) + bits[12:20] + bits[11] + bits[1:11] + "0"
         
+    elif immsrc == 4:
+        # U-type: {instr[31:12], 12'b0}
+        ext = bits[0:20] + "0" * 12
+        
     else:
         return 0
 

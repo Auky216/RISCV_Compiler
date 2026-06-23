@@ -1,17 +1,24 @@
 from . import utils
 
 def encode_instruction(instruccion_ensamblador: str) -> str:
-    # Quitamos paréntesis y comas para facilitar la separación de las partes
     texto_limpio = instruccion_ensamblador.replace(",", " ").replace("(", " ").replace(")", " ")
     partes_instruccion = texto_limpio.split()
+    # Reemplazar el caracter especial '.' por '0' en cualquier posición de argumento
+    partes_instruccion = ["0" if p == "." else p for p in partes_instruccion]
     mnemonico = partes_instruccion[0]
     
     # --- EXPANSIÓN DE PSEUDO-INSTRUCCIONES ---
     if mnemonico == "li":
-        # li rd, inmediato -> addi rd, zero, inmediato
         rd = partes_instruccion[1]
         inmediato = partes_instruccion[2]
-        return encode_instruction(f"addi {rd}, zero, {inmediato}")
+        val = int(inmediato, 0)
+        if -2048 <= val <= 2047:
+            return encode_instruction(f"addi {rd}, zero, {val}")
+        elif (val & 0xFFF) == 0:
+            upper = val >> 12
+            return encode_instruction(f"lui {rd}, {upper}")
+        else:
+            return "Error: 'li' no soporta este valor grande en una sola instrucción."
         
     elif mnemonico == "mv":
         # mv rd, rs -> addi rd, rs, 0
@@ -22,6 +29,17 @@ def encode_instruction(instruccion_ensamblador: str) -> str:
     elif mnemonico == "ret":
         # ret -> jalr zero, ra, 0
         return encode_instruction("jalr zero, ra, 0")
+
+    elif mnemonico == "j":
+        # j offset -> jal zero, offset
+        offset = partes_instruccion[1]
+        return encode_instruction(f"jal zero, {offset}")
+
+    elif mnemonico == "call":
+        # call offset -> jal ra, offset (simplified for this compiler)
+        offset = partes_instruccion[1]
+        return encode_instruction(f"jal ra, {offset}")
+
     
     binario_32_bits = ""
 
@@ -70,7 +88,7 @@ def encode_instruction(instruccion_ensamblador: str) -> str:
     elif mnemonico in instrucciones_tipo_i_alu:
         registro_destino = utils.registro_a_binario(partes_instruccion[1])
         registro_fuente_1 = utils.registro_a_binario(partes_instruccion[2])
-        valor_inmediato = int(partes_instruccion[3])
+        valor_inmediato = int(partes_instruccion[3], 0)
         inmediato_binario = utils.entero_a_binario_con_signo(valor_inmediato, 12)
         opcode = "0010011"
         
@@ -94,7 +112,7 @@ def encode_instruction(instruccion_ensamblador: str) -> str:
     elif mnemonico in instrucciones_tipo_i_shift:
         registro_destino = utils.registro_a_binario(partes_instruccion[1])
         registro_fuente_1 = utils.registro_a_binario(partes_instruccion[2])
-        cantidad_corrimiento = int(partes_instruccion[3])
+        cantidad_corrimiento = int(partes_instruccion[3], 0)
         shamt_binario = utils.entero_a_binario_con_signo(cantidad_corrimiento, 5)
         opcode = "0010011"
         
@@ -115,7 +133,7 @@ def encode_instruction(instruccion_ensamblador: str) -> str:
     # --- TIPO I (Cargas / Loads) ---
     elif mnemonico in instrucciones_tipo_i_load:
         registro_destino = utils.registro_a_binario(partes_instruccion[1])
-        valor_inmediato = int(partes_instruccion[2])
+        valor_inmediato = int(partes_instruccion[2], 0)
         inmediato_binario = utils.entero_a_binario_con_signo(valor_inmediato, 12)
         registro_base = utils.registro_a_binario(partes_instruccion[3])
         opcode = "0000011"
@@ -137,7 +155,7 @@ def encode_instruction(instruccion_ensamblador: str) -> str:
     # --- TIPO S (Guardados / Stores) ---
     elif mnemonico in instrucciones_tipo_s:
         registro_fuente_2 = utils.registro_a_binario(partes_instruccion[1])
-        valor_inmediato = int(partes_instruccion[2])
+        valor_inmediato = int(partes_instruccion[2], 0)
         inmediato_binario = utils.entero_a_binario_con_signo(valor_inmediato, 12)
         registro_base = utils.registro_a_binario(partes_instruccion[3])
         opcode = "0100011"
@@ -159,7 +177,7 @@ def encode_instruction(instruccion_ensamblador: str) -> str:
     elif mnemonico in instrucciones_tipo_b:
         registro_fuente_1 = utils.registro_a_binario(partes_instruccion[1])
         registro_fuente_2 = utils.registro_a_binario(partes_instruccion[2])
-        valor_inmediato = int(partes_instruccion[3])
+        valor_inmediato = int(partes_instruccion[3], 0)
         # Requiere 13 bits porque el bit 0 siempre se considera 0 y no se almacena igual
         inmediato_binario = utils.entero_a_binario_con_signo(valor_inmediato, 13) 
         opcode = "1100011"
@@ -190,7 +208,7 @@ def encode_instruction(instruccion_ensamblador: str) -> str:
     # --- TIPO U y J ---
     elif mnemonico in ["lui", "auipc"]:
         registro_destino = utils.registro_a_binario(partes_instruccion[1])
-        valor_inmediato = int(partes_instruccion[2])
+        valor_inmediato = int(partes_instruccion[2], 0)
         inmediato_binario = utils.entero_a_binario_con_signo(valor_inmediato, 20)
         
         opcode = "0110111"
@@ -201,7 +219,7 @@ def encode_instruction(instruccion_ensamblador: str) -> str:
 
     elif mnemonico == "jal":
         registro_destino = utils.registro_a_binario(partes_instruccion[1])
-        valor_inmediato = int(partes_instruccion[2])
+        valor_inmediato = int(partes_instruccion[2], 0)
         # Requiere 21 bits porque el bit 0 siempre es 0
         inmediato_binario = utils.entero_a_binario_con_signo(valor_inmediato, 21) 
         opcode = "1101111"
@@ -217,7 +235,7 @@ def encode_instruction(instruccion_ensamblador: str) -> str:
     elif mnemonico == "jalr":
         registro_destino = utils.registro_a_binario(partes_instruccion[1])
         registro_base = utils.registro_a_binario(partes_instruccion[2])
-        valor_inmediato = int(partes_instruccion[3])
+        valor_inmediato = int(partes_instruccion[3], 0)
         inmediato_binario = utils.entero_a_binario_con_signo(valor_inmediato, 12)
         
         opcode = "1100111"

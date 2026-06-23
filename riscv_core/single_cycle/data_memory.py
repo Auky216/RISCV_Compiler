@@ -1,28 +1,39 @@
-# Memoria de Datos: Arreglo de 64 posiciones inicializadas en 0
-RAM = [0] * 64
+RAM = bytearray(64 * 4) # Usaremos bytearray en vez de list de ints para manejo de bytes directo
 
-def READ_DATA_MEMORY(a):
-    # En Verilog tienes: assign rd = RAM[a[31:2]];
-    # Desplazar 2 bits a la derecha (a >> 2) es lo mismo que dividir entre 4 (word-aligned).
-    # Usamos módulo 64 (% 64) para evitar que Python falle si la dirección sale del arreglo.
-    index = (a >> 2) % 64
-    
-    rd = RAM[index]
-    return rd
+def to_signed_8(val):
+    return val - 256 if val & 0x80 else val
 
-def WRITE_DATA_MEMORY(a, wd, we):
-    # En Verilog: always @(posedge clk) begin if (we) RAM[a[31:2]] <= wd; end
-    if we == 1:
-        index = (a >> 2) % 64
-        RAM[index] = wd
+def to_signed_16(val):
+    return val - 65536 if val & 0x8000 else val
 
-def DATA_MEMORY(a, wd, we):
-    # 1. SIEMPRE leemos de la memoria (Fase Combinacional)
-    rd = READ_DATA_MEMORY(a)
-    
-    # 2. Escribimos en la memoria (Fase Secuencial)
-    # La función WRITE internamente decidirá si escribe o no basado en "we"
-    WRITE_DATA_MEMORY(a, wd, we)
-    
-    # 3. ¡Súper importante! Retornar lo que leímos para que datapath.py lo pueda usar
+def READ_DATA_MEMORY(a, funct3):
+    if a >= len(RAM):
+        return 0
+    if funct3 == 0: # lb
+        val = RAM[a]
+        return to_signed_8(val) & 0xFFFFFFFF
+    elif funct3 == 1: # lh
+        val = int.from_bytes(RAM[a:a+2], byteorder='little')
+        return to_signed_16(val) & 0xFFFFFFFF
+    elif funct3 == 2: # lw
+        return int.from_bytes(RAM[a:a+4], byteorder='little')
+    elif funct3 == 4: # lbu
+        return RAM[a]
+    elif funct3 == 5: # lhu
+        return int.from_bytes(RAM[a:a+2], byteorder='little')
+    return int.from_bytes(RAM[a:a+4], byteorder='little')
+
+def WRITE_DATA_MEMORY(a, wd, we, funct3):
+    if we == 1 and a < len(RAM):
+        if funct3 == 0: # sb
+            RAM[a] = wd & 0xFF
+        elif funct3 == 1: # sh
+            RAM[a:a+2] = (wd & 0xFFFF).to_bytes(2, byteorder='little')
+        elif funct3 == 2: # sw
+            RAM[a:a+4] = (wd & 0xFFFFFFFF).to_bytes(4, byteorder='little')
+
+def DATA_MEMORY(a, wd, we, funct3=2):
+    # Por defecto funct3=2 (word)
+    rd = READ_DATA_MEMORY(a, funct3)
+    WRITE_DATA_MEMORY(a, wd, we, funct3)
     return rd

@@ -57,6 +57,10 @@ class CompiladorRISCV:
                 if re.search(pattern, texto_modificado):
                     offset = sym_pc - instr_pc
                     texto_modificado = re.sub(pattern, str(offset), texto_modificado)
+            
+            # Soporte para la etiqueta especial "." (saltar a sí mismo, offset = 0)
+            texto_modificado = texto_modificado.replace(" .", " 0").replace(",.", ",0")
+
                     
             hex_str = self.encode_instruction(texto_modificado)
             if hex_str.startswith("Error"):

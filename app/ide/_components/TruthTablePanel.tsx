@@ -1,6 +1,6 @@
 "use client";
 
-import React from "react";
+import React, { useState, useRef } from "react";
 import { RiscvModel } from "@/domain/riscv/model";
 
 interface TruthTablePanelProps {
@@ -11,6 +11,42 @@ export function TruthTablePanel({ model }: TruthTablePanelProps) {
   const s = model?.controlSignals || {};
   const instr = s["Instr"] || 0;
   const opcode = instr & 0x7F;
+
+  const [scale, setScale] = useState(1);
+  const [pan, setPan] = useState({ x: 0, y: 0 });
+  const [isDragging, setIsDragging] = useState(false);
+  const dragStart = useRef({ x: 0, y: 0 });
+
+  const handleWheel = (e: React.WheelEvent) => {
+    e.preventDefault();
+    const zoomSensitivity = 0.001;
+    const delta = -e.deltaY * zoomSensitivity;
+    setScale((prevScale) => Math.min(Math.max(0.3, prevScale + delta), 3));
+  };
+
+  const handleMouseDown = (e: React.MouseEvent) => {
+    setIsDragging(true);
+    dragStart.current = { x: e.clientX - pan.x, y: e.clientY - pan.y };
+  };
+
+  const handleMouseMove = (e: React.MouseEvent) => {
+    if (!isDragging) return;
+    setPan({
+      x: e.clientX - dragStart.current.x,
+      y: e.clientY - dragStart.current.y,
+    });
+  };
+
+  const handleMouseUp = () => {
+    setIsDragging(false);
+  };
+
+  const zoomIn = () => setScale(s => Math.min(s + 0.2, 3));
+  const zoomOut = () => setScale(s => Math.max(s - 0.2, 0.3));
+  const resetZoom = () => {
+    setScale(1);
+    setPan({ x: 0, y: 0 });
+  };
 
   const mainControlRows = [
     { Instruction: "lw", Opcode: "0000011", RegWrite: "1", ImmSrc: "00", ALUSrcA: "0", ALUSrcB: "1", MemWrite: "0", ResultSrc: "01", Branch: "0", ALUOp: "00", Jump: "0" },
@@ -72,9 +108,32 @@ export function TruthTablePanel({ model }: TruthTablePanelProps) {
   };
 
   return (
-    <div className="flex-1 overflow-auto p-8 bg-surface-container-lowest flex flex-col items-center">
-      <h2 className="text-xl font-bold mb-2 text-black text-center">Table 1. Main Decoder Truth Table</h2>
-      <div className="border-2 border-black w-full max-w-5xl mb-12">
+    <div className="flex-1 w-full h-full bg-surface-container-lowest relative overflow-hidden flex flex-col">
+      <div className="absolute top-4 right-4 z-10 flex gap-2 bg-surface-bright p-1 rounded border border-outline-variant shadow-sm">
+        <button onClick={zoomIn} className="p-2 hover:bg-surface-container rounded text-on-surface material-symbols-outlined" title="Zoom In">zoom_in</button>
+        <button onClick={zoomOut} className="p-2 hover:bg-surface-container rounded text-on-surface material-symbols-outlined" title="Zoom Out">zoom_out</button>
+        <button onClick={resetZoom} className="p-2 hover:bg-surface-container rounded text-on-surface material-symbols-outlined" title="Reset View">fit_screen</button>
+      </div>
+
+      <div 
+        className="flex-1 w-full h-full bg-white cursor-grab active:cursor-grabbing overflow-hidden"
+        onWheel={handleWheel}
+        onMouseDown={handleMouseDown}
+        onMouseMove={handleMouseMove}
+        onMouseUp={handleMouseUp}
+        onMouseLeave={handleMouseUp}
+      >
+        <div 
+          className="w-full h-full flex flex-col items-center justify-center pt-8"
+          style={{
+            transform: `translate(${pan.x}px, ${pan.y}px) scale(${scale})`,
+            transformOrigin: "center center",
+            transition: isDragging ? "none" : "transform 0.1s ease-out"
+          }}
+        >
+          <div className="flex flex-col items-center pointer-events-none p-8">
+            <h2 className="text-xl font-bold mb-2 text-black text-center">Table 1. Main Decoder Truth Table</h2>
+            <div className="border-2 border-black w-full max-w-5xl mb-12">
         <table className="w-full text-left text-sm whitespace-nowrap border-collapse">
           <thead>
             <tr>
@@ -141,6 +200,9 @@ export function TruthTablePanel({ model }: TruthTablePanelProps) {
             })}
           </tbody>
         </table>
+      </div>
+          </div>
+        </div>
       </div>
     </div>
   );
