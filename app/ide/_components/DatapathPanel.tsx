@@ -48,7 +48,7 @@ export function DatapathPanel({ model }: DatapathPanelProps) {
 
   const getWireColor = (isActive: boolean | undefined, defaultColor = "black") => {
     if (isActive === undefined) return defaultColor;
-    return isActive ? "#2563eb" : defaultColor;
+    return isActive ? "#ef4444" : defaultColor;
   };
 
   const getStrokeWidth = (isActive: boolean | undefined) => {
@@ -60,12 +60,26 @@ export function DatapathPanel({ model }: DatapathPanelProps) {
     return `0x${(val >>> 0).toString(16).toUpperCase()}`;
   };
 
-  const isRegWrite = s["RegWrite"] === 1;
+  // Control Signals with fallback logic if the backend doesn't explicitly send them
   const isMemWrite = s["MemWrite"] === 1;
   const isALUSrc = s["ALUSrc"] === 1;
   const isResultSrc = s["ResultSrc"] === 1;
   const isBranch = s["PCSrc"] === 1;
   const isZero = s["Zero"] === 1;
+  
+  const instr = s["Instr"] || 0;
+  const opcode = instr & 0x7F;
+  const isRType = opcode === 51;
+  const isIType = opcode === 19 || opcode === 3 || opcode === 103;
+  const isSType = opcode === 35;
+  const isBType = opcode === 99;
+  const isUType = opcode === 55 || opcode === 23;
+  const isJType = opcode === 111;
+  
+  const isRegWrite = s["RegWrite"] === 1 || isRType || isIType || isUType || isJType || opcode === 3;
+  
+  const usesRs1 = isRType || isIType || isSType || isBType;
+  const usesRs2 = isRType || isSType || isBType;
   
   const isRunning = model && !model.isFinished && model.stepsExecuted >= 0;
 
@@ -107,12 +121,11 @@ export function DatapathPanel({ model }: DatapathPanelProps) {
           <div className="relative" style={{ width: '1600px', height: '1000px', minWidth: '1600px', minHeight: '1000px' }}>
             <svg width="1600" height="1000" xmlns="http://www.w3.org/2000/svg" className="absolute inset-0 pointer-events-none" style={{ fontFamily: 'Arial, sans-serif' }}>
               <defs>
-                {/* Puntas de flecha mucho más delgadas y elegantes */}
                 <marker id="arrowhead" markerWidth="10" markerHeight="8" refX="9" refY="4" orient="auto">
                   <polygon points="0 1.5, 10 4, 0 6.5" fill="black" />
                 </marker>
-                <marker id="arrowhead-blue" markerWidth="10" markerHeight="8" refX="9" refY="4" orient="auto">
-                  <polygon points="0 1.5, 10 4, 0 6.5" fill="#2563eb" />
+                <marker id="arrowhead-active" markerWidth="10" markerHeight="8" refX="9" refY="4" orient="auto">
+                  <polygon points="0 1.5, 10 4, 0 6.5" fill="#ef4444" />
                 </marker>
               </defs>
 
@@ -134,9 +147,9 @@ export function DatapathPanel({ model }: DatapathPanelProps) {
               <text x="410" y="435" fontSize="16" textAnchor="middle" fill="black" fontWeight="bold">Memory</text>
 
               {/* Control Unit */}
-              <rect x="700" y="50" width="100" height="230" rx="20" fill="white" stroke="black" strokeWidth="2" />
-              <text x="750" y="150" fontSize="16" textAnchor="middle" fill="black" fontWeight="bold">Control</text>
-              <text x="750" y="170" fontSize="16" textAnchor="middle" fill="black" fontWeight="bold">Unit</text>
+              <rect x="620" y="20" width="100" height="340" rx="20" fill="white" stroke="black" strokeWidth="2" />
+              <text x="670" y="150" fontSize="16" textAnchor="middle" fill="black" fontWeight="bold">Control</text>
+              <text x="670" y="170" fontSize="16" textAnchor="middle" fill="black" fontWeight="bold">Unit</text>
 
               {/* Register File */}
               <rect x="750" y="380" width="140" height="200" fill="white" stroke="black" strokeWidth="2" />
@@ -212,23 +225,23 @@ export function DatapathPanel({ model }: DatapathPanelProps) {
                   ========================================== */}
               
               {/* PC Mux -> PC */}
-              <path d="M 120 440 L 190 440" stroke={getWireColor(isRunning)} strokeWidth={getStrokeWidth(isRunning)} fill="none" markerEnd={isRunning ? "url(#arrowhead-blue)" : "url(#arrowhead)"} />
+              <path d="M 120 440 L 190 440" stroke={getWireColor(isRunning)} strokeWidth={getStrokeWidth(isRunning)} fill="none" markerEnd={isRunning ? "url(#arrowhead-active)" : "url(#arrowhead)"} />
               <text x="160" y="430" fontSize="14" textAnchor="middle" fill="black">PCNext</text>
               {isRunning && <DataBadge x={160} y={460} value={toHex(s["PCNext"])} color="#2563eb" />}
 
               {/* PC -> Instr Mem & Adders */}
-              <path d="M 230 430 L 340 430" stroke={getWireColor(isRunning)} strokeWidth={getStrokeWidth(isRunning)} fill="none" markerEnd={isRunning ? "url(#arrowhead-blue)" : "url(#arrowhead)"} />
+              <path d="M 230 430 L 340 430" stroke={getWireColor(isRunning)} strokeWidth={getStrokeWidth(isRunning)} fill="none" markerEnd={isRunning ? "url(#arrowhead-active)" : "url(#arrowhead)"} />
               {isRunning && <DataBadge x={285} y={410} value={toHex(model?.pc)} color="#2563eb" />}
               
-              <path d="M 285 430 L 285 745 L 340 745" stroke={getWireColor(isRunning)} strokeWidth={getStrokeWidth(isRunning)} fill="none" markerEnd={isRunning ? "url(#arrowhead-blue)" : "url(#arrowhead)"} />
-              <path d="M 285 745 L 285 700 L 1100 700" stroke={getWireColor(isRunning)} strokeWidth={getStrokeWidth(isRunning)} fill="none" markerEnd={isRunning ? "url(#arrowhead-blue)" : "url(#arrowhead)"} />
+              <path d="M 285 430 L 285 745 L 340 745" stroke={getWireColor(isRunning)} strokeWidth={getStrokeWidth(isRunning)} fill="none" markerEnd={isRunning ? "url(#arrowhead-active)" : "url(#arrowhead)"} />
+              <path d="M 285 745 L 285 700 L 1100 700" stroke={getWireColor(isRunning)} strokeWidth={getStrokeWidth(isRunning)} fill="none" markerEnd={isRunning ? "url(#arrowhead-active)" : "url(#arrowhead)"} />
 
               {/* 4 -> PCPlus4 Adder */}
               <text x="310" y="780" fontSize="14" fill="black">4</text>
               <path d="M 320 775 L 340 775" stroke="black" strokeWidth="1.5" fill="none" markerEnd="url(#arrowhead)" />
               
               {/* PCPlus4 Adder -> PC Mux 0 */}
-              <path d="M 380 760 L 420 760 L 420 850 L 70 850 L 70 420 L 90 420" stroke={getWireColor(isRunning && !isBranch)} strokeWidth={getStrokeWidth(isRunning && !isBranch)} fill="none" markerEnd={isRunning && !isBranch ? "url(#arrowhead-blue)" : "url(#arrowhead)"} />
+              <path d="M 380 760 L 420 760 L 420 850 L 70 850 L 70 420 L 90 420" stroke={getWireColor(isRunning && !isBranch)} strokeWidth={getStrokeWidth(isRunning && !isBranch)} fill="none" markerEnd={isRunning && !isBranch ? "url(#arrowhead-active)" : "url(#arrowhead)"} />
               <text x="440" y="840" fontSize="14" fill="black">PCPlus4</text>
 
               {/* ==========================================
@@ -242,38 +255,38 @@ export function DatapathPanel({ model }: DatapathPanelProps) {
               <path d="M 550 150 L 550 775" stroke={getWireColor(isRunning)} strokeWidth={getStrokeWidth(isRunning)} fill="none" />
 
               {/* Taps hacia Control Unit */}
-              <path d="M 550 150 L 690 150" stroke={getWireColor(isRunning)} strokeWidth={getStrokeWidth(isRunning)} fill="none" markerEnd={isRunning ? "url(#arrowhead-blue)" : "url(#arrowhead)"} />
-              <text x="620" y="140" fontSize="14" textAnchor="middle" fill="black">6:0 op</text>
+              <path d="M 550 80 L 620 80" stroke={getWireColor(isRunning)} strokeWidth={getStrokeWidth(isRunning)} fill="none" markerEnd={isRunning ? "url(#arrowhead-active)" : "url(#arrowhead)"} />
+              <text x="585" y="70" fontSize="14" textAnchor="middle" fill="black">6:0 op</text>
               
-              <path d="M 550 190 L 690 190" stroke={getWireColor(isRunning)} strokeWidth={getStrokeWidth(isRunning)} fill="none" markerEnd={isRunning ? "url(#arrowhead-blue)" : "url(#arrowhead)"} />
-              <text x="620" y="180" fontSize="14" textAnchor="middle" fill="black">14:12 funct3</text>
+              <path d="M 550 160 L 620 160" stroke={getWireColor(isRunning)} strokeWidth={getStrokeWidth(isRunning)} fill="none" markerEnd={isRunning ? "url(#arrowhead-active)" : "url(#arrowhead)"} />
+              <text x="585" y="150" fontSize="14" textAnchor="middle" fill="black">14:12 funct3</text>
 
-              <path d="M 550 230 L 690 230" stroke={getWireColor(isRunning)} strokeWidth={getStrokeWidth(isRunning)} fill="none" markerEnd={isRunning ? "url(#arrowhead-blue)" : "url(#arrowhead)"} />
-              <text x="620" y="220" fontSize="14" textAnchor="middle" fill="black">30 funct7</text>
+              <path d="M 550 240 L 620 240" stroke={getWireColor(isRunning)} strokeWidth={getStrokeWidth(isRunning)} fill="none" markerEnd={isRunning ? "url(#arrowhead-active)" : "url(#arrowhead)"} />
+              <text x="585" y="230" fontSize="14" textAnchor="middle" fill="black">30 funct7</text>
 
               {/* Taps hacia Register File */}
-              <path d="M 550 420 L 740 420" stroke={getWireColor(isRunning)} strokeWidth={getStrokeWidth(isRunning)} fill="none" markerEnd={isRunning ? "url(#arrowhead-blue)" : "url(#arrowhead)"} />
+              <path d="M 550 420 L 740 420" stroke={getWireColor(isRunning && usesRs1)} strokeWidth={getStrokeWidth(isRunning && usesRs1)} fill="none" markerEnd={isRunning && usesRs1 ? "url(#arrowhead-active)" : "url(#arrowhead)"} />
               <text x="645" y="410" fontSize="14" textAnchor="middle" fill="black">19:15</text>
               
-              <path d="M 550 480 L 740 480" stroke={getWireColor(isRunning)} strokeWidth={getStrokeWidth(isRunning)} fill="none" markerEnd={isRunning ? "url(#arrowhead-blue)" : "url(#arrowhead)"} />
+              <path d="M 550 480 L 740 480" stroke={getWireColor(isRunning && usesRs2)} strokeWidth={getStrokeWidth(isRunning && usesRs2)} fill="none" markerEnd={isRunning && usesRs2 ? "url(#arrowhead-active)" : "url(#arrowhead)"} />
               <text x="645" y="470" fontSize="14" textAnchor="middle" fill="black">24:20</text>
               
-              <path d="M 550 540 L 740 540" stroke={getWireColor(isRunning)} strokeWidth={getStrokeWidth(isRunning)} fill="none" markerEnd={isRunning ? "url(#arrowhead-blue)" : "url(#arrowhead)"} />
+              <path d="M 550 540 L 740 540" stroke={getWireColor(isRunning && isRegWrite)} strokeWidth={getStrokeWidth(isRunning && isRegWrite)} fill="none" markerEnd={isRunning && isRegWrite ? "url(#arrowhead-active)" : "url(#arrowhead)"} />
               <text x="645" y="530" fontSize="14" textAnchor="middle" fill="black">11:7</text>
 
               {/* Tap hacia Extend */}
-              <path d="M 550 775 L 740 775" stroke={getWireColor(isRunning)} strokeWidth={getStrokeWidth(isRunning)} fill="none" markerEnd={isRunning ? "url(#arrowhead-blue)" : "url(#arrowhead)"} />
+              <path d="M 550 775 L 740 775" stroke={getWireColor(isRunning)} strokeWidth={getStrokeWidth(isRunning)} fill="none" markerEnd={isRunning ? "url(#arrowhead-active)" : "url(#arrowhead)"} />
               <text x="645" y="765" fontSize="14" textAnchor="middle" fill="black">31:7</text>
 
               {/* ========================================== */}
 
               {/* RF RD1 -> ALU A */}
-              <path d="M 890 420 L 1090 420" stroke={getWireColor(isRunning)} strokeWidth={getStrokeWidth(isRunning)} fill="none" markerEnd={isRunning ? "url(#arrowhead-blue)" : "url(#arrowhead)"} />
+              <path d="M 890 420 L 1090 420" stroke={getWireColor(isRunning && usesRs1)} strokeWidth={getStrokeWidth(isRunning && usesRs1)} fill="none" markerEnd={isRunning && usesRs1 ? "url(#arrowhead-active)" : "url(#arrowhead)"} />
               <text x="940" y="410" fontSize="14" textAnchor="middle" fill="black">SrcA</text>
 
               {/* RF RD2 -> MUX 0 & DataMem WD */}
-              <path d="M 890 520 L 950 520 L 950 470 L 990 470" stroke={getWireColor(isRunning && !isALUSrc)} strokeWidth={getStrokeWidth(isRunning && !isALUSrc)} fill="none" markerEnd={isRunning && !isALUSrc ? "url(#arrowhead-blue)" : "url(#arrowhead)"} />
-              <path d="M 950 520 L 950 540 L 1290 540" stroke={getWireColor(isRunning)} strokeWidth={getStrokeWidth(isRunning)} fill="none" markerEnd={isRunning ? "url(#arrowhead-blue)" : "url(#arrowhead)"} />
+              <path d="M 890 520 L 950 520 L 950 470 L 990 470" stroke={getWireColor(isRunning && usesRs2 && !isALUSrc)} strokeWidth={getStrokeWidth(isRunning && usesRs2 && !isALUSrc)} fill="none" markerEnd={isRunning && usesRs2 && !isALUSrc ? "url(#arrowhead-active)" : "url(#arrowhead)"} />
+              <path d="M 950 520 L 950 540 L 1290 540" stroke={getWireColor(isRunning && isSType)} strokeWidth={getStrokeWidth(isRunning && isSType)} fill="none" markerEnd={isRunning && isSType ? "url(#arrowhead-active)" : "url(#arrowhead)"} />
               <text x="1200" y="530" fontSize="14" fill="black">WriteData</text>
               {isRunning && <DataBadge x={1200} y={560} value={toHex(s["WriteData"])} color="#2563eb" />}
 
@@ -282,11 +295,11 @@ export function DatapathPanel({ model }: DatapathPanelProps) {
               <text x="935" y="765" fontSize="14" textAnchor="middle" fill="black">ImmExt</text>
               {isRunning && <DataBadge x={935} y={800} value={toHex(s["ImmExt"])} color="#2563eb" />}
               
-              <path d="M 980 775 L 980 510 L 990 510" stroke={getWireColor(isALUSrc)} strokeWidth={getStrokeWidth(isALUSrc)} fill="none" markerEnd={isALUSrc ? "url(#arrowhead-blue)" : "url(#arrowhead)"} />
-              <path d="M 980 775 L 1090 775" stroke={getWireColor(isBranch)} strokeWidth={getStrokeWidth(isBranch)} fill="none" markerEnd={isBranch ? "url(#arrowhead-blue)" : "url(#arrowhead)"} />
+              <path d="M 980 775 L 980 510 L 990 510" stroke={getWireColor(isALUSrc)} strokeWidth={getStrokeWidth(isALUSrc)} fill="none" markerEnd={isALUSrc ? "url(#arrowhead-active)" : "url(#arrowhead)"} />
+              <path d="M 980 775 L 1090 775" stroke={getWireColor(isBranch)} strokeWidth={getStrokeWidth(isBranch)} fill="none" markerEnd={isBranch ? "url(#arrowhead-active)" : "url(#arrowhead)"} />
 
               {/* ALUSrc MUX -> ALU B */}
-              <path d="M 1020 490 L 1090 490" stroke={getWireColor(isRunning)} strokeWidth={getStrokeWidth(isRunning)} fill="none" markerEnd={isRunning ? "url(#arrowhead-blue)" : "url(#arrowhead)"} />
+              <path d="M 1020 490 L 1090 490" stroke={getWireColor(isRunning)} strokeWidth={getStrokeWidth(isRunning)} fill="none" markerEnd={isRunning ? "url(#arrowhead-active)" : "url(#arrowhead)"} />
               <text x="1055" y="480" fontSize="14" textAnchor="middle" fill="black">SrcB</text>
 
               {/* ALU -> DataMem & Result MUX 0 */}
@@ -294,26 +307,26 @@ export function DatapathPanel({ model }: DatapathPanelProps) {
               <text x="1185" y="430" fontSize="14" textAnchor="middle" fill="black">ALUResult</text>
               {isRunning && <DataBadge x={1185} y={465} value={toHex(s["ALUResult"])} color="#2563eb" />}
 
-              <path d="M 1220 440 L 1290 440" stroke={getWireColor(isRunning)} strokeWidth={getStrokeWidth(isRunning)} fill="none" markerEnd={isRunning ? "url(#arrowhead-blue)" : "url(#arrowhead)"} />
-              <path d="M 1220 440 L 1220 370 L 1490 370" stroke={getWireColor(isRunning && !isResultSrc)} strokeWidth={getStrokeWidth(isRunning && !isResultSrc)} fill="none" markerEnd={isRunning && !isResultSrc ? "url(#arrowhead-blue)" : "url(#arrowhead)"} />
+              <path d="M 1220 440 L 1290 440" stroke={getWireColor(isRunning)} strokeWidth={getStrokeWidth(isRunning)} fill="none" markerEnd={isRunning ? "url(#arrowhead-active)" : "url(#arrowhead)"} />
+              <path d="M 1220 440 L 1220 320 L 1480 320 L 1480 440 L 1500 440" stroke={getWireColor(isRunning && !isResultSrc)} strokeWidth={getStrokeWidth(isRunning && !isResultSrc)} fill="none" markerEnd={isRunning && !isResultSrc ? "url(#arrowhead-active)" : "url(#arrowhead)"} />
 
               {/* DataMem -> Result MUX 1 */}
-              <path d="M 1420 440 L 1460 440 L 1460 480 L 1490 480" stroke={getWireColor(isResultSrc)} strokeWidth={getStrokeWidth(isResultSrc)} fill="none" markerEnd={isResultSrc ? "url(#arrowhead-blue)" : "url(#arrowhead)"} />
+              <path d="M 1420 440 L 1460 440 L 1460 480 L 1500 480" stroke={getWireColor(isResultSrc)} strokeWidth={getStrokeWidth(isResultSrc)} fill="none" markerEnd={isResultSrc ? "url(#arrowhead-active)" : "url(#arrowhead)"} />
               <text x="1460" y="430" fontSize="14" textAnchor="middle" fill="black">ReadData</text>
               {isRunning && <DataBadge x={1460} y={505} value={toHex(s["ReadData"])} color="#2563eb" />}
 
               {/* Result MUX -> RegFile WD3 */}
-              <path d="M 1520 460 L 1560 460 L 1560 900 L 700 900 L 700 560 L 740 560" stroke={getWireColor(isRegWrite)} strokeWidth={getStrokeWidth(isRegWrite)} fill="none" markerEnd={isRegWrite ? "url(#arrowhead-blue)" : "url(#arrowhead)"} />
+              <path d="M 1520 460 L 1560 460 L 1560 900 L 700 900 L 700 560 L 740 560" stroke={getWireColor(isRegWrite)} strokeWidth={getStrokeWidth(isRegWrite)} fill="none" markerEnd={isRegWrite ? "url(#arrowhead-active)" : "url(#arrowhead)"} />
               <text x="1540" y="450" fontSize="14" textAnchor="middle" fill="black">Result</text>
               {isRunning && <DataBadge x={1540} y={485} value={toHex(s["Result"])} color="#2563eb" />}
 
               {/* PCTarget Adder -> PC MUX 1 */}
-              <path d="M 1130 760 L 1180 760 L 1180 950 L 50 950 L 50 460 L 90 460" stroke={getWireColor(isBranch)} strokeWidth={getStrokeWidth(isBranch)} fill="none" markerEnd={isBranch ? "url(#arrowhead-blue)" : "url(#arrowhead)"} />
+              <path d="M 1130 760 L 1180 760 L 1180 950 L 50 950 L 50 460 L 90 460" stroke={getWireColor(isBranch)} strokeWidth={getStrokeWidth(isBranch)} fill="none" markerEnd={isBranch ? "url(#arrowhead-active)" : "url(#arrowhead)"} />
               <text x="1155" y="750" fontSize="14" textAnchor="middle" fill="black">PCTarget</text>
               {isRunning && <DataBadge x={1155} y={785} value={toHex(s["PCTarget"])} color="#2563eb" />}
 
               {/* ALU Zero -> Control */}
-              <path d="M 1150 400 L 1180 400 L 1180 300 L 720 300 L 720 280 L 740 280" stroke={getWireColor(isZero, "black")} strokeWidth={getStrokeWidth(isZero)} fill="none" markerEnd={isZero ? "url(#arrowhead-blue)" : "url(#arrowhead)"} />
+              <path d="M 1150 400 L 1180 400 L 1180 290 L 720 290" stroke={getWireColor(isZero, "black")} strokeWidth={getStrokeWidth(isZero)} fill="none" markerEnd={isZero ? "url(#arrowhead-active)" : "url(#arrowhead)"} />
               <text x="1165" y="390" fontSize="14" fill={getWireColor(isZero, "black")}>Zero</text>
 
               {/* ==========================================
@@ -321,32 +334,32 @@ export function DatapathPanel({ model }: DatapathPanelProps) {
                   ========================================== */}
               
               {/* PCSrc */}
-              <path d="M 800 70 L 830 70 L 830 20 L 110 20 L 110 390" stroke={getWireColor(isBranch, "black")} strokeWidth={getStrokeWidth(isBranch)} fill="none" markerEnd={isBranch ? "url(#arrowhead-blue)" : "url(#arrowhead)"} />
-              <text x="840" y="65" fontSize="14" fill={getWireColor(isBranch, "black")} fontWeight={isBranch ? "bold" : "normal"}>PCSrc</text>
+              <path d="M 720 50 L 750 50 L 750 10 L 110 10 L 110 390" stroke={getWireColor(isBranch, "black")} strokeWidth={getStrokeWidth(isBranch)} fill="none" markerEnd={isBranch ? "url(#arrowhead-active)" : "url(#arrowhead)"} />
+              <text x="730" y="45" fontSize="14" fill={getWireColor(isBranch, "black")} fontWeight={isBranch ? "bold" : "normal"}>PCSrc</text>
 
               {/* ResultSrc */}
-              <path d="M 800 100 L 1510 100 L 1510 410" stroke={getWireColor(isResultSrc, "black")} strokeWidth={getStrokeWidth(isResultSrc)} fill="none" markerEnd={isResultSrc ? "url(#arrowhead-blue)" : "url(#arrowhead)"} />
-              <text x="840" y="95" fontSize="14" fill={getWireColor(isResultSrc, "black")} fontWeight={isResultSrc ? "bold" : "normal"}>ResultSrc</text>
+              <path d="M 720 90 L 1510 90 L 1510 410" stroke={getWireColor(isResultSrc, "black")} strokeWidth={getStrokeWidth(isResultSrc)} fill="none" markerEnd={isResultSrc ? "url(#arrowhead-active)" : "url(#arrowhead)"} />
+              <text x="730" y="85" fontSize="14" fill={getWireColor(isResultSrc, "black")} fontWeight={isResultSrc ? "bold" : "normal"}>ResultSrc</text>
 
               {/* MemWrite */}
-              <path d="M 800 130 L 1360 130 L 1360 340" stroke={getWireColor(isMemWrite, "black")} strokeWidth={getStrokeWidth(isMemWrite)} fill="none" markerEnd={isMemWrite ? "url(#arrowhead-blue)" : "url(#arrowhead)"} />
-              <text x="840" y="125" fontSize="14" fill={getWireColor(isMemWrite, "black")} fontWeight={isMemWrite ? "bold" : "normal"}>MemWrite</text>
+              <path d="M 720 130 L 1360 130 L 1360 340" stroke={getWireColor(isMemWrite, "black")} strokeWidth={getStrokeWidth(isMemWrite)} fill="none" markerEnd={isMemWrite ? "url(#arrowhead-active)" : "url(#arrowhead)"} />
+              <text x="730" y="125" fontSize="14" fill={getWireColor(isMemWrite, "black")} fontWeight={isMemWrite ? "bold" : "normal"}>MemWrite</text>
 
               {/* ALUControl */}
-              <path d="M 800 160 L 1130 160 L 1130 350" stroke={getWireColor(isRunning, "black")} strokeWidth={getStrokeWidth(isRunning)} fill="none" markerEnd={isRunning ? "url(#arrowhead-blue)" : "url(#arrowhead)"} />
-              <text x="840" y="155" fontSize="14" fill={getWireColor(isRunning, "black")} fontWeight={isRunning ? "bold" : "normal"}>ALUControl<tspan fontSize="10" dy="5">2:0</tspan></text>
+              <path d="M 720 170 L 1130 170 L 1130 350" stroke={getWireColor(isRunning, "black")} strokeWidth={getStrokeWidth(isRunning)} fill="none" markerEnd={isRunning ? "url(#arrowhead-active)" : "url(#arrowhead)"} />
+              <text x="730" y="165" fontSize="14" fill={getWireColor(isRunning, "black")} fontWeight={isRunning ? "bold" : "normal"}>ALUControl<tspan fontSize="10" dy="5">2:0</tspan></text>
 
               {/* ALUSrc */}
-              <path d="M 800 190 L 1010 190 L 1010 440" stroke={getWireColor(isALUSrc, "black")} strokeWidth={getStrokeWidth(isALUSrc)} fill="none" markerEnd={isALUSrc ? "url(#arrowhead-blue)" : "url(#arrowhead)"} />
-              <text x="840" y="185" fontSize="14" fill={getWireColor(isALUSrc, "black")} fontWeight={isALUSrc ? "bold" : "normal"}>ALUSrc</text>
+              <path d="M 720 210 L 1010 210 L 1010 440" stroke={getWireColor(isALUSrc, "black")} strokeWidth={getStrokeWidth(isALUSrc)} fill="none" markerEnd={isALUSrc ? "url(#arrowhead-active)" : "url(#arrowhead)"} />
+              <text x="730" y="205" fontSize="14" fill={getWireColor(isALUSrc, "black")} fontWeight={isALUSrc ? "bold" : "normal"}>ALUSrc</text>
 
               {/* ImmSrc */}
-              <path d="M 800 220 L 880 220 L 880 740" stroke={getWireColor(isRunning, "black")} strokeWidth={getStrokeWidth(isRunning)} fill="none" markerEnd={isRunning ? "url(#arrowhead-blue)" : "url(#arrowhead)"} />
-              <text x="890" y="215" fontSize="14" fill={getWireColor(isRunning, "black")} fontWeight={isRunning ? "bold" : "normal"}>ImmSrc<tspan fontSize="10" dy="5">1:0</tspan></text>
+              <path d="M 670 360 L 670 730 L 810 730 L 810 750" stroke={getWireColor(isRunning, "black")} strokeWidth={getStrokeWidth(isRunning)} fill="none" markerEnd={isRunning ? "url(#arrowhead-active)" : "url(#arrowhead)"} />
+              <text x="680" y="380" fontSize="14" fill={getWireColor(isRunning, "black")} fontWeight={isRunning ? "bold" : "normal"}>ImmSrc<tspan fontSize="10" dy="5">1:0</tspan></text>
 
               {/* RegWrite */}
-              <path d="M 800 250 L 830 250 L 830 370" stroke={getWireColor(isRegWrite, "black")} strokeWidth={getStrokeWidth(isRegWrite)} fill="none" markerEnd={isRegWrite ? "url(#arrowhead-blue)" : "url(#arrowhead)"} />
-              <text x="840" y="260" fontSize="14" fill={getWireColor(isRegWrite, "black")} fontWeight={isRegWrite ? "bold" : "normal"}>RegWrite</text>
+              <path d="M 720 250 L 820 250 L 820 380" stroke={getWireColor(isRegWrite, "black")} strokeWidth={getStrokeWidth(isRegWrite)} fill="none" markerEnd={isRegWrite ? "url(#arrowhead-active)" : "url(#arrowhead)"} />
+              <text x="730" y="245" fontSize="14" fill={getWireColor(isRegWrite, "black")} fontWeight={isRegWrite ? "bold" : "normal"}>RegWrite</text>
 
             </svg>
           </div>

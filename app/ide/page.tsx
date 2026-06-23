@@ -14,6 +14,7 @@ import { CodeEditor } from "./_components/CodeEditor";
 import { RegisterPanel } from "./_components/RegisterPanel";
 import { MemoryMapPanel } from "./_components/MemoryMapPanel";
 import { DatapathPanel } from "./_components/DatapathPanel";
+import { TruthTablePanel } from "./_components/TruthTablePanel";
 import { ConsolePanel } from "./_components/ConsolePanel";
 import { SettingsModal } from "./_components/SettingsModal";
 import { IdeSettings, DEFAULT_SETTINGS, LogEntry } from "./_components/types";
@@ -37,7 +38,7 @@ function IdePage() {
 
   // State: UI & Settings
   const [activeView, setActiveView] = useState<"editor" | "memory" | "database" | "terminal">("editor");
-  const [activeTab, setActiveTab] = useState<"registers" | "memory" | "datapath">("registers");
+  const [activeTab, setActiveTab] = useState<"registers" | "memory" | "datapath" | "control">("registers");
   const [settings, setSettings] = useState<IdeSettings>(DEFAULT_SETTINGS);
   const [isSettingsOpen, setIsSettingsOpen] = useState(false);
 
@@ -236,6 +237,16 @@ function IdePage() {
                 >
                   DATAPATH
                 </button>
+                <button
+                  onClick={() => setActiveTab("control")}
+                  className={`font-label-md text-label-md transition-colors h-full px-2 border-b-2 ${
+                    activeTab === "control"
+                      ? "text-primary border-primary"
+                      : "text-on-surface-variant border-transparent hover:text-on-surface"
+                  }`}
+                >
+                  CONTROL TABLES
+                </button>
               </div>
 
               {/* Tab content */}
@@ -249,6 +260,7 @@ function IdePage() {
                 )}
                 {activeTab === "memory" && <MemoryMapPanel model={model} />}
                 {activeTab === "datapath" && <DatapathPanel model={model} />}
+                {activeTab === "control" && <TruthTablePanel model={model} />}
               </div>
             </section>
           </div>

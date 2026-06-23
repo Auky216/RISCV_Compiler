@@ -121,11 +121,15 @@ export function TopNavBar({
           <button
             onClick={onStepBack}
             disabled={isLoading || model?.stepsExecuted === 0}
-            className={`flex items-center gap-1 px-2 py-0.5 border font-body-sm text-body-sm transition-all border-primary text-primary hover:bg-primary/10 ${isLoading || model?.stepsExecuted === 0 ? "opacity-40 cursor-not-allowed" : ""}`}
-            title="Retroceder (Step Back)"
+            className={`flex items-center gap-1.5 px-3 py-1 rounded-md font-medium text-sm transition-all border ${
+              isLoading || model?.stepsExecuted === 0 
+                ? "border-outline-variant text-outline opacity-50 cursor-not-allowed" 
+                : "border-primary text-primary hover:bg-primary/10 shadow-sm"
+            }`}
+            title="Retroceder un paso (Step Back)"
           >
-            <span className="material-symbols-outlined">step_out</span>
-            <span>Back</span>
+            <span className="material-symbols-outlined text-[20px]">undo</span>
+            <span>Step Back</span>
           </button>
         )}
 
@@ -133,15 +137,17 @@ export function TopNavBar({
         <button
           onClick={isDebugging ? onStep : onDebugStart}
           disabled={isLoading || (model?.isFinished && isDebugging)}
-          className={`flex items-center gap-1.5 px-3 py-0.5 border font-body-sm text-body-sm transition-all ${
+          className={`flex items-center gap-1.5 px-4 py-1 rounded-md font-medium text-sm transition-all shadow-sm ${
             isDebugging
-              ? "border-primary text-primary hover:bg-primary/10"
-              : "border-outline-variant text-on-surface-variant hover:border-outline"
-          } ${isLoading || model?.isFinished ? "opacity-40 cursor-not-allowed" : ""}`}
-          title={isDebugging ? "Paso a paso (Step)" : "Start Debug Session"}
+              ? isLoading || model?.isFinished
+                ? "bg-primary text-on-primary opacity-50 cursor-not-allowed"
+                : "bg-primary text-on-primary hover:opacity-90 hover:shadow-md"
+              : "border border-outline-variant text-on-surface-variant hover:border-outline hover:bg-surface-container-low"
+          }`}
+          title={isDebugging ? "Avanzar un paso (Step Forward)" : "Start Debug Session"}
         >
-          <span className="material-symbols-outlined">step_into</span>
-          <span>{isDebugging ? "Step" : "Debug"}</span>
+          <span className="material-symbols-outlined text-[20px]">{isDebugging ? "redo" : "bug_report"}</span>
+          <span>{isDebugging ? "Step Forward" : "Debug"}</span>
         </button>
 
         {/* Stop / Restart */}

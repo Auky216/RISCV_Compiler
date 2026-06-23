@@ -102,7 +102,28 @@ def execute_single_cycle_step(session: DebugSession):
     Result = MUX2(ALUResult, ReadData, ResultSrc)
     sc_reg.WRITE_REGISTER_FILE(a3, Result, RegWrite)
     
-    session.control_signals = {
+    session.pc = FLOPR(PCNext, 0, width=32)
+    session.steps_executed += 1
+
+def peek_control_signals(session: DebugSession):
+    if session.is_finished:
+        return {}
+        
+    # We must ensure state is injected so memory/registers are readable by the combinational logic
+    inject_state(session)
+    Instr = sc_imem.INSTRUCTION_MEMORY(session.pc)
+    
+    if Instr == 0:
+        return {}
+        
+    ImmSrc, RegWrite, ALUSrc, ALUControl, MemWrite, ResultSrc, PCSrc = CONTROL_UNIT(Instr)
+    PCNext, ALUResult, WriteData, Zero, ImmExt, a3 = DATAPATH(
+        session.pc, Instr, ImmSrc, ALUSrc, ALUControl, PCSrc
+    )
+    ReadData = sc_dmem.DATA_MEMORY(ALUResult, WriteData, MemWrite)
+    Result = MUX2(ALUResult, ReadData, ResultSrc)
+    
+    return {
         "ImmSrc": ImmSrc,
         "RegWrite": RegWrite,
         "ALUSrc": ALUSrc,
@@ -120,9 +141,6 @@ def execute_single_cycle_step(session: DebugSession):
         "PCNext": PCNext,
         "PCTarget": session.pc + ImmExt
     }
-    
-    session.pc = FLOPR(PCNext, 0, width=32)
-    session.steps_executed += 1
 
 def build_response(session: DebugSession, session_id: str = ""):
     return {
@@ -136,7 +154,7 @@ def build_response(session: DebugSession, session_id: str = ""):
         "program_size": session.program_size,
         "pc": session.pc,
         "current_line": session.pc_to_line_map.get(session.pc, None),
-        "control_signals": session.control_signals
+        "control_signals": peek_control_signals(session)
     }
 
 # =========================================================

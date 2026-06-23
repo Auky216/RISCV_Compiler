@@ -131,7 +131,7 @@ export function CodeEditor({ code, onChange, fontSize = "md", isBinaryMode = fal
             return (
               <div 
                 key={i} 
-                className={`flex justify-end items-center px-2 ${isCurrent ? "bg-primary/20 text-primary font-bold shadow-[inset_2px_0_0_0_rgba(var(--color-primary),1)]" : "pr-3"}`}
+                className={`flex justify-end items-center px-2 ${isCurrent ? "bg-[#eab308]/20 text-[#ca8a04] font-bold shadow-[inset_2px_0_0_0_#eab308]" : "pr-3"}`}
                 style={{ height: lineH }}
               >
                 {isCurrent && <span className="text-[10px] mr-1">►</span>}
@@ -146,7 +146,7 @@ export function CodeEditor({ code, onChange, fontSize = "md", isBinaryMode = fal
           {/* Highlight Background for executing line */}
           {!isBinaryMode && currentLine && currentLine > 0 && currentLine <= lines.length && (
             <div 
-              className="absolute left-0 right-0 bg-primary/10 pointer-events-none transition-all duration-200 ease-out z-0"
+              className="absolute left-0 right-0 bg-[#eab308]/30 pointer-events-none transition-all duration-200 ease-out z-0"
               style={{
                 top: `calc(1rem + ${(currentLine - 1)} * ${lineH})`,
                 height: lineH,
