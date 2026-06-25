@@ -68,7 +68,7 @@ export function TruthTablePanel({ model }: TruthTablePanelProps) {
   ];
 
   const getRowClass = (isActive: boolean) => {
-    return isActive ? "bg-primary text-background font-bold shadow-[inset_0_0_8px_rgba(0,0,0,0.5)]" : "text-primary bg-background";
+    return isActive ? "bg-primary text-white font-bold shadow-[inset_0_0_8px_rgba(0,0,0,0.5)]" : "text-primary bg-background";
   };
 
   const isActiveOpcode = (rowOpcodeStr: string) => {
@@ -149,22 +149,22 @@ export function TruthTablePanel({ model }: TruthTablePanelProps) {
           }}
         >
           <div className="flex flex-col items-center pointer-events-none p-8 bg-background border-2 border-primary shadow-[2px_2px_0_var(--color-primary)]">
-            <h2 className="text-xs font-pixel-title mb-4 text-center uppercase bg-primary text-background px-3 py-2 inline-block border-2 border-primary">Tabla 1: Decodificador Principal (Main Decoder)</h2>
+            <h2 className="text-xs font-pixel-title mb-4 text-center uppercase bg-primary text-white px-3 py-2 inline-block border-2 border-primary">Tabla 1: Decodificador Principal (Main Decoder)</h2>
             <div className="border-2 border-primary w-full max-w-5xl mb-12 bg-primary p-1">
         <table className="w-full text-left text-sm whitespace-nowrap border-collapse bg-background">
           <thead>
             <tr>
-              <th className="px-3 py-1.5 border-2 border-primary bg-primary text-background font-pixel-title text-[10px] uppercase text-center">Instruction</th>
-              <th className="px-3 py-1.5 border-2 border-primary bg-primary text-background font-pixel-title text-[10px] uppercase text-center">Opcode</th>
-              <th className="px-3 py-1.5 border-2 border-primary bg-primary text-background font-pixel-title text-[10px] uppercase text-center">RegWrite</th>
-              <th className="px-3 py-1.5 border-2 border-primary bg-primary text-background font-pixel-title text-[10px] uppercase text-center">ImmSrc</th>
-              <th className="px-3 py-1.5 border-2 border-primary bg-primary text-background font-pixel-title text-[10px] uppercase text-center">ALUSrcA</th>
-              <th className="px-3 py-1.5 border-2 border-primary bg-primary text-background font-pixel-title text-[10px] uppercase text-center">ALUSrcB</th>
-              <th className="px-3 py-1.5 border-2 border-primary bg-primary text-background font-pixel-title text-[10px] uppercase text-center">MemWrite</th>
-              <th className="px-3 py-1.5 border-2 border-primary bg-primary text-background font-pixel-title text-[10px] uppercase text-center">ResultSrc</th>
-              <th className="px-3 py-1.5 border-2 border-primary bg-primary text-background font-pixel-title text-[10px] uppercase text-center">Branch</th>
-              <th className="px-3 py-1.5 border-2 border-primary bg-primary text-background font-pixel-title text-[10px] uppercase text-center">ALUOp</th>
-              <th className="px-3 py-1.5 border-2 border-primary bg-primary text-background font-pixel-title text-[10px] uppercase text-center">Jump</th>
+              <th className="px-3 py-1.5 border-2 border-primary bg-primary text-white font-pixel-title text-[10px] uppercase text-center">Instruction</th>
+              <th className="px-3 py-1.5 border-2 border-primary bg-primary text-white font-pixel-title text-[10px] uppercase text-center">Opcode</th>
+              <th className="px-3 py-1.5 border-2 border-primary bg-primary text-white font-pixel-title text-[10px] uppercase text-center">RegWrite</th>
+              <th className="px-3 py-1.5 border-2 border-primary bg-primary text-white font-pixel-title text-[10px] uppercase text-center">ImmSrc</th>
+              <th className="px-3 py-1.5 border-2 border-primary bg-primary text-white font-pixel-title text-[10px] uppercase text-center">ALUSrcA</th>
+              <th className="px-3 py-1.5 border-2 border-primary bg-primary text-white font-pixel-title text-[10px] uppercase text-center">ALUSrcB</th>
+              <th className="px-3 py-1.5 border-2 border-primary bg-primary text-white font-pixel-title text-[10px] uppercase text-center">MemWrite</th>
+              <th className="px-3 py-1.5 border-2 border-primary bg-primary text-white font-pixel-title text-[10px] uppercase text-center">ResultSrc</th>
+              <th className="px-3 py-1.5 border-2 border-primary bg-primary text-white font-pixel-title text-[10px] uppercase text-center">Branch</th>
+              <th className="px-3 py-1.5 border-2 border-primary bg-primary text-white font-pixel-title text-[10px] uppercase text-center">ALUOp</th>
+              <th className="px-3 py-1.5 border-2 border-primary bg-primary text-white font-pixel-title text-[10px] uppercase text-center">Jump</th>
             </tr>
           </thead>
           <tbody>
@@ -190,16 +190,16 @@ export function TruthTablePanel({ model }: TruthTablePanelProps) {
         </table>
       </div>
 
-      <h2 className="text-xs font-pixel-title mb-4 text-center uppercase bg-primary text-background px-3 py-2 inline-block border-2 border-primary">Tabla 2: Decodificador de ALU (ALU Decoder)</h2>
+      <h2 className="text-xs font-pixel-title mb-4 text-center uppercase bg-primary text-white px-3 py-2 inline-block border-2 border-primary">Tabla 2: Decodificador de ALU (ALU Decoder)</h2>
       <div className="border-2 border-primary w-full max-w-3xl bg-primary p-1">
         <table className="w-full text-left text-sm whitespace-nowrap border-collapse bg-background">
           <thead>
             <tr>
-              <th className="px-3 py-1.5 border-2 border-primary bg-primary text-background font-pixel-title text-[10px] uppercase text-center">ALUOp<sub className="text-[8px] ml-1">1:0</sub></th>
-              <th className="px-3 py-1.5 border-2 border-primary bg-primary text-background font-pixel-title text-[10px] uppercase text-center">funct3<sub className="text-[8px] ml-1">2:0</sub></th>
-              <th className="px-3 py-1.5 border-2 border-primary bg-primary text-background font-pixel-title text-[10px] uppercase text-center">&#123;op<sub className="text-[8px] mx-1">5</sub>, funct7<sub className="text-[8px] mx-1">5</sub>&#125;</th>
-              <th className="px-3 py-1.5 border-2 border-primary bg-primary text-background font-pixel-title text-[10px] uppercase text-center">ALUControl<sub className="text-[8px] ml-1">2:0</sub></th>
-              <th className="px-3 py-1.5 border-2 border-primary bg-primary text-background font-pixel-title text-[10px] uppercase text-center">Operation</th>
+              <th className="px-3 py-1.5 border-2 border-primary bg-primary text-white font-pixel-title text-[10px] uppercase text-center">ALUOp<sub className="text-[8px] ml-1">1:0</sub></th>
+              <th className="px-3 py-1.5 border-2 border-primary bg-primary text-white font-pixel-title text-[10px] uppercase text-center">funct3<sub className="text-[8px] ml-1">2:0</sub></th>
+              <th className="px-3 py-1.5 border-2 border-primary bg-primary text-white font-pixel-title text-[10px] uppercase text-center">&#123;op<sub className="text-[8px] mx-1">5</sub>, funct7<sub className="text-[8px] mx-1">5</sub>&#125;</th>
+              <th className="px-3 py-1.5 border-2 border-primary bg-primary text-white font-pixel-title text-[10px] uppercase text-center">ALUControl<sub className="text-[8px] ml-1">2:0</sub></th>
+              <th className="px-3 py-1.5 border-2 border-primary bg-primary text-white font-pixel-title text-[10px] uppercase text-center">Operation</th>
             </tr>
           </thead>
           <tbody>

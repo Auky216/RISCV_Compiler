@@ -26,6 +26,8 @@ export function MemoryMapPanel({ model }: MemoryMapPanelProps) {
   }
 
   const { start: progStart, end: progEnd } = model.getProgramRange();
+  const pcVal = model.pc;
+  const spVal = model.registers[2]; // x2 is sp
 
   // Determinar rango a mostrar
   const startAddr = showOnlyProgram ? 0 : page * PAGE_SIZE * BYTES_PER_ROW;
@@ -44,7 +46,7 @@ export function MemoryMapPanel({ model }: MemoryMapPanelProps) {
           <span className="font-pixel-title text-xs text-primary uppercase">
             {model.memory.length / 1024} KB MEMORIA
           </span>
-          <span className="font-pixel-title text-[10px] text-background bg-primary px-2 py-1 uppercase shadow-[2px_2px_0_var(--color-primary)]">
+          <span className="font-pixel-title text-[10px] text-white bg-primary px-2 py-1 uppercase shadow-[2px_2px_0_var(--color-primary)]">
             .text: 0x{progStart.toString(16).padStart(8, "0").toUpperCase()}–0x{progEnd.toString(16).padStart(8, "0").toUpperCase()}
           </span>
         </div>
@@ -73,10 +75,11 @@ export function MemoryMapPanel({ model }: MemoryMapPanelProps) {
                   <div className="w-[110px] text-center border-b-[2px] border-primary pb-1">WORD 3 (+0xC)</div>
                 </div>
               </th>
+              <th className="text-left pl-6 py-3 font-pixel-title text-[10px] uppercase border-l-2 border-primary/10">ASCII TEXT</th>
             </tr>
           </thead>
           <tbody>
-            {rows.map(({ address, bytes }) => {
+            {rows.map(({ address, bytes, ascii }) => {
               // Dividir los 16 bytes en 4 bloques de 4 bytes (Words)
               const words = [];
               for (let i = 0; i < 16; i += 4) {
@@ -97,20 +100,20 @@ export function MemoryMapPanel({ model }: MemoryMapPanelProps) {
                         const wordAddr = address + wIdx * 4;
                         
                         // Cálculo Little Endian
-                        // JS bitwise operators actuan en 32-bit enteros con signo
                         const realValue = (wordBytes[3] << 24) | (wordBytes[2] << 16) | (wordBytes[1] << 8) | wordBytes[0];
-                        // Para hexadecimal, necesitamos forzar unsigned (>>> 0)
                         const hexValue = (realValue >>> 0).toString(16).padStart(8, "0").toUpperCase();
                         
                         const isProgWord = wordAddr >= progStart && wordAddr < progEnd;
                         const isEmpty = wordBytes.every(b => b === 0);
+                        const isCurrentPC = pcVal !== undefined && pcVal >= wordAddr && pcVal < wordAddr + 4;
+                        const isCurrentSP = spVal !== undefined && spVal >= wordAddr && spVal < wordAddr + 4;
 
                         return (
                           <div key={wIdx} className="relative group">
                             {/* Tooltip Interactivo */}
                             <div className="absolute bottom-full left-1/2 -translate-x-1/2 mb-2 hidden group-hover:flex flex-col items-center z-50 pointer-events-none">
                               <div className="bg-background border-2 border-primary shadow-[4px_4px_0_var(--color-primary)] p-3 text-xs font-mono whitespace-nowrap uppercase">
-                                <div className="text-background bg-primary font-pixel-title text-[10px] px-2 py-1 mb-3 text-center shadow-[2px_2px_0_rgba(0,0,0,0.5)]">
+                                <div className="text-white bg-primary font-pixel-title text-[10px] px-2 py-1 mb-3 text-center shadow-[2px_2px_0_rgba(0,0,0,0.5)]">
                                   DETALLE DE PALABRA
                                 </div>
                                 <div className="flex justify-between gap-6 mb-2">
@@ -130,21 +133,31 @@ export function MemoryMapPanel({ model }: MemoryMapPanelProps) {
                               <div className="w-3 h-3 bg-background border-r-2 border-b-2 border-primary rotate-45 -mt-2"></div>
                             </div>
 
+                            {/* Pointer Overlays */}
+                            {isCurrentPC && (
+                              <span className="absolute -top-2.5 -left-1.5 bg-red-500 text-white font-pixel-title text-[6px] px-1 py-0.5 border-[1px] border-white shadow-[1px_1px_0_rgba(0,0,0,0.35)] z-20 animate-pulse">
+                                PC
+                              </span>
+                            )}
+                            {isCurrentSP && (
+                              <span className="absolute -top-2.5 -right-1.5 bg-yellow-400 text-primary font-pixel-title text-[6px] px-1 py-0.5 border-[1px] border-primary shadow-[1px_1px_0_rgba(0,0,0,0.35)] z-20">
+                                SP
+                              </span>
+                            )}
+
                             {/* Caja de Palabra (Word Block) */}
                             <div className={`flex justify-center items-center gap-1 w-[110px] p-2 transition-all duration-200 cursor-default ${
                               isProgWord 
-                                ? "bg-primary text-background shadow-[inset_0_0_8px_rgba(0,0,0,0.5)] border-[1px] border-primary group-hover:shadow-[inset_0_0_12px_rgba(0,0,0,0.8)] group-hover:-translate-y-1" 
+                                ? "bg-primary text-white shadow-[inset_0_0_8px_rgba(0,0,0,0.5)] border-[1px] border-primary group-hover:shadow-[inset_0_0_12px_rgba(0,0,0,0.8)] group-hover:-translate-y-1" 
                                 : isEmpty 
-                                  ? "bg-transparent border-[1px] border-transparent opacity-30 group-hover:opacity-100 group-hover:border-primary/50"
+                                  ? "bg-primary/[0.02] border-[1px] border-dashed border-primary/20 text-primary/30 group-hover:border-primary/50 group-hover:bg-primary/[0.05]"
                                   : "bg-background text-primary border-[1px] border-primary group-hover:shadow-[2px_2px_0_var(--color-primary)] group-hover:-translate-y-1"
                             }`}>
                               {wordBytes.map((byte, bIdx) => (
                                 <span key={bIdx} className={`w-5 text-center tabular-nums transition-colors duration-200 ${
                                   byte === 0 && !isProgWord
-                                    ? "opacity-40 group-hover:opacity-70" 
-                                    : isProgWord 
-                                      ? "font-bold" 
-                                      : "font-bold"
+                                    ? "opacity-40 group-hover:opacity-80" 
+                                    : "font-bold"
                                 }`}>
                                   {byte.toString(16).toUpperCase().padStart(2, "0")}
                                 </span>
@@ -154,6 +167,11 @@ export function MemoryMapPanel({ model }: MemoryMapPanelProps) {
                         );
                       })}
                     </div>
+                  </td>
+
+                  {/* ASCII representation */}
+                  <td className="py-3 pl-6 font-mono text-xs text-primary/60 tracking-widest select-none align-middle border-l-2 border-primary/10">
+                    {ascii}
                   </td>
                 </tr>
               );
@@ -173,7 +191,7 @@ export function MemoryMapPanel({ model }: MemoryMapPanelProps) {
             <span className="material-symbols-outlined text-[16px]">chevron_left</span>
             ANTERIOR
           </button>
-          <span className="font-pixel-title text-[10px] text-background bg-primary px-3 py-1 shadow-[2px_2px_0_var(--color-primary)] uppercase">
+          <span className="font-pixel-title text-[10px] text-white bg-primary px-3 py-1 shadow-[2px_2px_0_var(--color-primary)] uppercase">
             PAGINA {page + 1} / {totalPages} · 0x{(page * PAGE_SIZE * BYTES_PER_ROW).toString(16).toUpperCase().padStart(6, "0")}
           </span>
           <button

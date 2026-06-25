@@ -25,7 +25,7 @@ export function SideRail({ activeView, onViewChange }: SideRailProps) {
             title={label}
             className={`w-12 h-10 flex items-center justify-center transition-all relative group border-[1px] ${
               isActive
-                ? "bg-primary text-background border-primary shadow-[2px_2px_0_var(--color-primary)] -translate-y-1"
+                ? "bg-primary text-white border-primary shadow-[2px_2px_0_var(--color-primary)] -translate-y-1"
                 : "text-primary border-transparent hover:border-primary hover:shadow-[2px_2px_0_var(--color-primary)] hover:-translate-y-1 bg-background"
             }`}
           >

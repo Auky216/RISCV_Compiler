@@ -162,7 +162,7 @@ export function CodeEditor({ code, onChange, fontSize = "md", isBinaryMode = fal
             return (
               <div 
                 key={i} 
-                className={`flex justify-end items-center px-2 ${isCurrent ? "bg-primary text-background font-bold shadow-[inset_4px_0_0_0_var(--color-primary)]" : "pr-4"}`}
+                className={`flex justify-end items-center px-2 ${isCurrent ? "bg-primary text-white font-bold shadow-[inset_4px_0_0_0_var(--color-primary)]" : "pr-4"}`}
                 style={{ height: lineH }}
               >
                 {isCurrent && <span className="text-[10px] mr-2">►</span>}

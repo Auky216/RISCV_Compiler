@@ -27,17 +27,17 @@ export function RegisterPanel({ model, displayFormat, showZeroRegisters }: Regis
         <span className="font-pixel-title text-xs text-primary uppercase">
           {rows.length === 32 ? "32 REGISTROS" : `${rows.length} MODIFICADOS`}
         </span>
-        <span className="font-pixel-title text-[10px] text-background bg-primary px-2 py-1 uppercase shadow-[2px_2px_0_var(--color-primary)]">
+        <span className="font-pixel-title text-[10px] text-white bg-primary px-2 py-1 uppercase shadow-[2px_2px_0_var(--color-primary)]">
           {displayFormat.toUpperCase()}
         </span>
       </div>
 
-      <div className="grid grid-cols-2 gap-[4px] bg-primary border-2 border-primary p-[4px] shadow-[2px_2px_0_var(--color-primary)]">
+      <div className="grid grid-cols-2 gap-[2px] bg-primary border-2 border-primary p-[2px] shadow-[2px_2px_0_var(--color-primary)]">
         {/* Header */}
-        <div className="bg-background p-2 text-center font-pixel-title text-[10px] text-primary uppercase">
+        <div className="bg-background p-2 text-center font-pixel-title text-[10px] text-primary uppercase font-bold">
           REG
         </div>
-        <div className="bg-background p-2 text-center font-pixel-title text-[10px] text-primary uppercase">
+        <div className="bg-background p-2 text-center font-pixel-title text-[10px] text-primary uppercase font-bold">
           VALUE ({displayFormat.toUpperCase()})
         </div>
 
@@ -47,18 +47,20 @@ export function RegisterPanel({ model, displayFormat, showZeroRegisters }: Regis
           return (
             <div key={i} className="contents">
               <div
-                className={`p-2 font-mono text-sm flex justify-between uppercase ${
-                  changed ? "bg-primary text-background font-bold shadow-[inset_0_0_8px_rgba(0,0,0,0.5)]" : "bg-background text-primary"
+                className={`p-2 font-mono text-sm flex justify-between items-center uppercase transition-colors duration-150 ${
+                  changed 
+                    ? "bg-primary text-white font-extrabold" 
+                    : "bg-background text-primary"
                 }`}
               >
                 <span>x{i}</span>
-                <span className={changed ? "opacity-70" : "opacity-50"}>({name})</span>
+                <span className={changed ? "text-blue-200 font-bold" : "text-primary/45"}>({name})</span>
               </div>
               <div
-                className={`p-2 font-mono text-sm tabular-nums text-right ${
+                className={`p-2 font-mono text-sm tabular-nums text-right font-extrabold transition-colors duration-150 ${
                   changed
-                    ? "bg-primary text-background font-bold shadow-[inset_0_0_8px_rgba(0,0,0,0.5)]"
-                    : "bg-background text-primary"
+                    ? "bg-primary text-white"
+                    : "bg-background text-primary/80"
                 }`}
               >
                 {getValue(i)}

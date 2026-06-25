@@ -60,7 +60,7 @@ export function TopNavBar({
           href="/"
           className="flex items-center gap-2 hover:opacity-70 transition-opacity"
         >
-          <div className="w-8 h-8 bg-primary text-background flex items-center justify-center font-bold text-lg animate-pulse">R</div>
+          <div className="w-8 h-8 bg-primary text-white flex items-center justify-center font-bold text-lg animate-pulse">R</div>
           <span className="text-sm tracking-widest uppercase">RISC-V OS</span>
         </a>
         <nav className="flex gap-1 relative group">
@@ -91,10 +91,11 @@ export function TopNavBar({
         {/* Reset */}
         <button
           onClick={onReset}
-          className="p-2 border-[1px] border-primary bg-background hover:bg-primary hover:text-background transition-all shadow-[2px_2px_0_var(--color-primary)] active:shadow-none active:translate-x-1 active:translate-y-1"
+          className="flex items-center gap-2 px-3 py-1.5 border-[1px] border-primary bg-background hover:bg-primary hover:text-background transition-all shadow-[2px_2px_0_var(--color-primary)] active:shadow-none active:translate-x-1 active:translate-y-1"
           title="Resetear estado"
         >
           <span className="material-symbols-outlined text-[18px]">replay</span>
+          <span className="text-xs">RESET</span>
         </button>
 
         {/* Run */}
@@ -102,10 +103,10 @@ export function TopNavBar({
           id="btn-run"
           onClick={onRun}
           disabled={isLoading}
-          className={`flex items-center gap-2 px-3 py-1.5 border-[1px] border-primary transition-all shadow-[2px_2px_0_var(--color-primary)] active:shadow-none active:translate-x-1 active:translate-y-1 ${
+          className={`flex items-center gap-2 px-3 py-1.5 border-[1px] transition-all active:shadow-none active:translate-x-1 active:translate-y-1 ${
             isLoading
-              ? "bg-background text-primary opacity-50 cursor-wait"
-              : "bg-primary text-background hover:bg-background hover:text-primary"
+              ? "bg-green-600 text-white border-green-600 shadow-[2px_2px_0_#16a34a] animate-pulse cursor-wait"
+              : "border-green-600 text-green-600 hover:bg-green-600 hover:text-white shadow-[2px_2px_0_#16a34a] bg-background"
           }`}
         >
           <span
@@ -114,7 +115,7 @@ export function TopNavBar({
           >
             {isLoading ? "hourglass_empty" : "play_arrow"}
           </span>
-          <span className="text-xs">{isLoading ? "RUNNING" : "RUN"}</span>
+          <span className="text-xs">{isLoading ? "RUNNING..." : "RUN"}</span>
         </button>
 
         {/* Step Back */}
@@ -142,7 +143,7 @@ export function TopNavBar({
             isDebugging
               ? isLoading || model?.isFinished
                 ? "bg-background text-primary opacity-50 cursor-not-allowed"
-                : "bg-primary text-background hover:bg-background hover:text-primary"
+                : "bg-primary text-white hover:bg-background hover:text-primary"
               : "bg-background text-primary hover:bg-primary hover:text-background"
           }`}
           title={isDebugging ? "Avanzar un paso (Step Forward)" : "Start Debug Session"}
@@ -164,30 +165,34 @@ export function TopNavBar({
         ) : (
           <button
             onClick={onStop}
-            className={`p-2 border-[1px] border-primary transition-all shadow-[2px_2px_0_var(--color-primary)] active:shadow-none active:translate-x-1 active:translate-y-1 ${
-              isDebugging ? "bg-background text-primary hover:bg-primary hover:text-background" : "bg-background text-primary opacity-30 cursor-not-allowed"
+            className={`flex items-center gap-2 px-3 py-1.5 border-[1px] transition-all active:shadow-none active:translate-x-1 active:translate-y-1 ${
+              isDebugging 
+                ? "border-red-600 text-red-600 hover:bg-red-600 hover:text-white shadow-[2px_2px_0_#dc2626]" 
+                : "border-red-600/30 text-red-600/30 shadow-[2px_2px_0_rgba(220,38,38,0.15)] opacity-30 cursor-not-allowed"
             }`}
             disabled={!isDebugging}
             title="Terminar sesión de debug"
           >
             <span className="material-symbols-outlined text-[18px]">stop</span>
+            <span className="text-xs">STOP</span>
           </button>
         )}
 
         <div className="h-8 w-[4px] bg-primary mx-2" />
 
         {/* Architecture Selector */}
-        <div className="flex items-center border-[1px] border-primary bg-background h-10 px-2 shadow-[2px_2px_0_var(--color-primary)]">
+        <div className="flex items-center gap-2 px-3 py-1.5 border-[1px] border-primary bg-background shadow-[2px_2px_0_var(--color-primary)]">
+          <span className="material-symbols-outlined text-[18px] text-primary">memory</span>
           <select
             value={architecture}
             onChange={(e) => onArchitectureChange(e.target.value as any)}
-            className="bg-transparent text-primary font-pixel-title text-xs outline-none cursor-pointer h-full border-none focus:ring-0 uppercase"
+            className="bg-transparent text-primary font-pixel-title text-xs outline-none cursor-pointer border-none focus:ring-0 uppercase p-0"
             disabled={isDebugging || isLoading}
             title="Seleccionar Arquitectura RISC-V"
           >
-            <option className="bg-background text-primary" value="single_cycle">Single Cycle</option>
-            <option className="bg-background text-primary" value="multi_cycle">Multi Cycle</option>
-            <option className="bg-background text-primary" value="pipeline">Pipeline</option>
+            <option className="bg-background text-primary text-xs" value="single_cycle">Single Cycle</option>
+            <option className="bg-background text-primary text-xs" value="multi_cycle">Multi Cycle</option>
+            <option className="bg-background text-primary text-xs" value="pipeline">Pipeline</option>
           </select>
         </div>
 
@@ -196,15 +201,17 @@ export function TopNavBar({
         {/* Settings */}
         <button
           onClick={onOpenSettings}
-          className="p-2 border-[1px] border-primary bg-background hover:bg-primary hover:text-background transition-all shadow-[2px_2px_0_var(--color-primary)] active:shadow-none active:translate-x-1 active:translate-y-1"
+          className="flex items-center gap-2 px-3 py-1.5 border-[1px] border-primary bg-background hover:bg-primary hover:text-background transition-all shadow-[2px_2px_0_var(--color-primary)] active:shadow-none active:translate-x-1 active:translate-y-1"
           title="Configuración"
         >
           <span className="material-symbols-outlined text-[18px]">settings</span>
+          <span className="text-xs">SETTINGS</span>
         </button>
 
         {/* PC Counter */}
-        <div className="flex items-center bg-background px-4 h-10 border-[1px] border-primary shadow-[2px_2px_0_var(--color-primary)] ml-2">
-          <span className="text-xs">PC: <span className="font-mono bg-primary/20 px-1">{pcValue}</span></span>
+        <div className="flex items-center gap-2 bg-background px-3 py-1.5 border-[1px] border-primary shadow-[2px_2px_0_var(--color-primary)] ml-2">
+          <span className="material-symbols-outlined text-[18px] text-primary">tag</span>
+          <span className="text-xs">PC: <span className="font-mono bg-primary/20 px-1 font-bold">{pcValue}</span></span>
         </div>
 
         <div className="h-8 w-[4px] bg-primary mx-2" />
@@ -221,7 +228,7 @@ export function TopNavBar({
               />
             ) : (
               <div
-                className="w-8 h-8 bg-primary text-background flex items-center justify-center text-xs font-bold border-[1px] border-primary shadow-[2px_2px_0_var(--color-primary)]"
+                className="w-8 h-8 bg-primary text-white flex items-center justify-center text-xs font-bold border-[1px] border-primary shadow-[2px_2px_0_var(--color-primary)]"
                 title={`${user.name} (${user.email})`}
               >
                 {user.name.charAt(0).toUpperCase()}
@@ -231,9 +238,10 @@ export function TopNavBar({
               id="btn-logout"
               onClick={onLogout}
               title="Cerrar sesión"
-              className="p-2 border-[1px] border-primary bg-background hover:bg-primary hover:text-background transition-all shadow-[2px_2px_0_var(--color-primary)] active:shadow-none active:translate-x-1 active:translate-y-1"
+              className="flex items-center gap-2 px-3 py-1.5 border-[1px] border-primary bg-background hover:bg-primary hover:text-background transition-all shadow-[2px_2px_0_var(--color-primary)] active:shadow-none active:translate-x-1 active:translate-y-1"
             >
               <span className="material-symbols-outlined text-[18px]">logout</span>
+              <span className="text-xs">EXIT</span>
             </button>
           </div>
         )}
