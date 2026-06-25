@@ -208,8 +208,6 @@ function IdePage() {
           onStepBack={handleStepBack}
           onStop={handleStop}
           onUploadBin={handleUploadBin}
-          architecture={architecture}
-          onArchitectureChange={setArchitecture}
         />
       </div>
 
@@ -315,7 +313,15 @@ function IdePage() {
       </div>
 
       {isSettingsOpen && (
-        <SettingsModal settings={settings} onSave={handleSaveSettings} onClose={() => setIsSettingsOpen(false)} />
+        <SettingsModal 
+          settings={settings} 
+          onSave={handleSaveSettings} 
+          onClose={() => setIsSettingsOpen(false)} 
+          architecture={architecture}
+          onArchitectureChange={setArchitecture}
+          isDebugging={isDebugging}
+          isLoading={isLoading}
+        />
       )}
     </div>
   );

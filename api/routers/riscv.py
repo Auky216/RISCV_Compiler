@@ -44,6 +44,7 @@ class DebugSession:
     def __init__(self, program_bytes: bytearray, architecture: str, pc_to_line_map: dict = None):
         self.architecture = architecture
         self.program_size = len(program_bytes)
+        self.program_bytes = program_bytes
         self.steps_executed = 0
         self.is_finished = False
         self.pc = 0

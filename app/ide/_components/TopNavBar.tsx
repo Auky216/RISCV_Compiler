@@ -19,8 +19,6 @@ interface TopNavBarProps {
   onStepBack: () => void;
   onStop: () => void;
   onUploadBin: (file: File) => void;
-  architecture: "single_cycle" | "multi_cycle" | "pipeline";
-  onArchitectureChange: (arch: "single_cycle" | "multi_cycle" | "pipeline") => void;
 }
 
 export function TopNavBar({
@@ -38,8 +36,6 @@ export function TopNavBar({
   onStepBack,
   onStop,
   onUploadBin,
-  architecture,
-  onArchitectureChange,
 }: TopNavBarProps) {
   const fileInputRef = React.useRef<HTMLInputElement>(null);
 
@@ -177,25 +173,6 @@ export function TopNavBar({
             <span className="text-xs">STOP</span>
           </button>
         )}
-
-        <div className="h-8 w-[4px] bg-primary mx-2" />
-
-        {/* Architecture Selector */}
-        <div className="flex items-center gap-2 px-3 py-1.5 border-[1px] border-primary bg-background shadow-[2px_2px_0_var(--color-primary)]">
-          <span className="material-symbols-outlined text-[18px] text-primary">memory</span>
-          <select
-            value={architecture}
-            onChange={(e) => onArchitectureChange(e.target.value as any)}
-            className="bg-transparent text-primary font-pixel-title text-xs outline-none cursor-pointer border-none focus:ring-0 uppercase p-0"
-            disabled={isDebugging || isLoading}
-            title="Seleccionar Arquitectura RISC-V"
-          >
-            <option className="bg-background text-primary text-xs" value="single_cycle">Single Cycle</option>
-            <option className="bg-background text-primary text-xs" value="multi_cycle">Multi Cycle</option>
-            <option className="bg-background text-primary text-xs" value="pipeline">Pipeline</option>
-          </select>
-        </div>
-
         <div className="h-8 w-[4px] bg-primary mx-2" />
 
         {/* Settings */}
