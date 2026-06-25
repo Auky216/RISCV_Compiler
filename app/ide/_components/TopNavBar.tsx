@@ -53,26 +53,27 @@ export function TopNavBar({
     : "0x00000000";
 
   return (
-    <header className="flex justify-between items-center h-toolbar-height px-panel-padding w-full z-50 bg-surface-container-lowest border-b border-outline-variant fixed top-0 no-shadow">
+    <header className="flex justify-between items-center h-14 px-4 w-full z-50 bg-background border-b-2 border-primary uppercase font-pixel-title text-primary" style={{ flexShrink: 0 }}>
       {/* Left: Logo + Menu */}
       <div className="flex items-center gap-6">
         <a
           href="/"
-          className="font-display-mono text-display-mono text-primary tracking-tighter text-[16px] hover:opacity-70 transition-opacity"
+          className="flex items-center gap-2 hover:opacity-70 transition-opacity"
         >
-          RISC-V Studio
+          <div className="w-8 h-8 bg-primary text-background flex items-center justify-center font-bold text-lg animate-pulse">R</div>
+          <span className="text-sm tracking-widest uppercase">RISC-V OS</span>
         </a>
         <nav className="flex gap-1 relative group">
-          <button className="font-body-sm text-body-sm text-on-surface-variant hover:bg-surface-container-high px-2 py-0.5 transition-colors">
-            File
+          <button className="text-xs px-2 py-1 border-[1px] border-transparent hover:border-primary transition-all">
+            FILE
           </button>
           {/* Dropdown simple en CSS para "File" */}
-          <div className="absolute top-full left-0 bg-surface-container-highest border border-outline-variant shadow-lg hidden group-hover:flex flex-col min-w-[150px] py-1 z-50">
+          <div className="absolute top-full left-0 bg-background border-2 border-primary shadow-[4px_4px_0_var(--color-primary)] hidden group-hover:flex flex-col min-w-[200px] p-2 z-50">
             <button
               onClick={() => fileInputRef.current?.click()}
-              className="text-left px-4 py-1.5 font-body-sm text-body-sm text-on-surface-variant hover:bg-surface-container-high hover:text-on-surface"
+              className="text-left px-3 py-1.5 text-xs hover:bg-primary hover:text-background border-[1px] border-transparent hover:border-background transition-all"
             >
-              Load .bin File...
+              LOAD .BIN FILE...
             </button>
             <input 
               type="file" 
@@ -86,14 +87,14 @@ export function TopNavBar({
       </div>
 
       {/* Center: Actions */}
-      <div className="flex items-center gap-2">
+      <div className="flex items-center gap-3">
         {/* Reset */}
         <button
           onClick={onReset}
-          className="p-1 text-on-surface-variant hover:bg-surface-container-high transition-colors"
+          className="p-2 border-[1px] border-primary bg-background hover:bg-primary hover:text-background transition-all shadow-[2px_2px_0_var(--color-primary)] active:shadow-none active:translate-x-1 active:translate-y-1"
           title="Resetear estado"
         >
-          <span className="material-symbols-outlined">replay</span>
+          <span className="material-symbols-outlined text-[18px]">replay</span>
         </button>
 
         {/* Run */}
@@ -101,19 +102,19 @@ export function TopNavBar({
           id="btn-run"
           onClick={onRun}
           disabled={isLoading}
-          className={`flex items-center gap-1.5 px-3 py-0.5 font-body-sm text-body-sm hover:opacity-80 transition-all ${
+          className={`flex items-center gap-2 px-3 py-1.5 border-[1px] border-primary transition-all shadow-[2px_2px_0_var(--color-primary)] active:shadow-none active:translate-x-1 active:translate-y-1 ${
             isLoading
-              ? "bg-outline text-surface cursor-wait"
-              : "bg-primary-container text-on-primary-container"
+              ? "bg-background text-primary opacity-50 cursor-wait"
+              : "bg-primary text-background hover:bg-background hover:text-primary"
           }`}
         >
           <span
-            className="material-symbols-outlined"
+            className="material-symbols-outlined text-[18px]"
             style={{ fontVariationSettings: "'FILL' 1" }}
           >
             {isLoading ? "hourglass_empty" : "play_arrow"}
           </span>
-          <span>{isLoading ? "Running..." : "Run"}</span>
+          <span className="text-xs">{isLoading ? "RUNNING" : "RUN"}</span>
         </button>
 
         {/* Step Back */}
@@ -121,15 +122,15 @@ export function TopNavBar({
           <button
             onClick={onStepBack}
             disabled={isLoading || model?.stepsExecuted === 0}
-            className={`flex items-center gap-1.5 px-3 py-1 rounded-md font-medium text-sm transition-all border ${
+            className={`flex items-center gap-2 px-3 py-1.5 border-[1px] border-primary transition-all shadow-[2px_2px_0_var(--color-primary)] active:shadow-none active:translate-x-1 active:translate-y-1 ${
               isLoading || model?.stepsExecuted === 0 
-                ? "border-outline-variant text-outline opacity-50 cursor-not-allowed" 
-                : "border-primary text-primary hover:bg-primary/10 shadow-sm"
+                ? "bg-background text-primary opacity-50 cursor-not-allowed" 
+                : "bg-background text-primary hover:bg-primary hover:text-background"
             }`}
             title="Retroceder un paso (Step Back)"
           >
-            <span className="material-symbols-outlined text-[20px]">undo</span>
-            <span>Step Back</span>
+            <span className="material-symbols-outlined text-[18px]">undo</span>
+            <span className="text-xs">BACK</span>
           </button>
         )}
 
@@ -137,105 +138,102 @@ export function TopNavBar({
         <button
           onClick={isDebugging ? onStep : onDebugStart}
           disabled={isLoading || (model?.isFinished && isDebugging)}
-          className={`flex items-center gap-1.5 px-4 py-1 rounded-md font-medium text-sm transition-all shadow-sm ${
+          className={`flex items-center gap-2 px-3 py-1.5 border-[1px] border-primary transition-all shadow-[2px_2px_0_var(--color-primary)] active:shadow-none active:translate-x-1 active:translate-y-1 ${
             isDebugging
               ? isLoading || model?.isFinished
-                ? "bg-primary text-on-primary opacity-50 cursor-not-allowed"
-                : "bg-primary text-on-primary hover:opacity-90 hover:shadow-md"
-              : "border border-outline-variant text-on-surface-variant hover:border-outline hover:bg-surface-container-low"
+                ? "bg-background text-primary opacity-50 cursor-not-allowed"
+                : "bg-primary text-background hover:bg-background hover:text-primary"
+              : "bg-background text-primary hover:bg-primary hover:text-background"
           }`}
           title={isDebugging ? "Avanzar un paso (Step Forward)" : "Start Debug Session"}
         >
-          <span className="material-symbols-outlined text-[20px]">{isDebugging ? "redo" : "bug_report"}</span>
-          <span>{isDebugging ? "Step Forward" : "Debug"}</span>
+          <span className="material-symbols-outlined text-[18px]">{isDebugging ? "redo" : "bug_report"}</span>
+          <span className="text-xs">{isDebugging ? "STEP" : "DEBUG"}</span>
         </button>
 
         {/* Stop / Restart */}
         {isDebugging && model?.isFinished ? (
           <button
             onClick={onReset}
-            className="flex items-center gap-1 px-2 py-0.5 font-body-sm text-body-sm transition-colors text-primary hover:bg-primary/10"
+            className="flex items-center gap-2 px-3 py-1.5 border-[1px] border-primary bg-background hover:bg-primary hover:text-background transition-all shadow-[2px_2px_0_var(--color-primary)] active:shadow-none active:translate-x-1 active:translate-y-1"
             title="Volver a empezar (Restart)"
           >
             <span className="material-symbols-outlined text-[18px]">restart_alt</span>
-            Restart
+            <span className="text-xs">RESTART</span>
           </button>
         ) : (
           <button
             onClick={onStop}
-            className={`p-1 transition-colors ${
-              isDebugging ? "text-error hover:bg-error/10" : "text-on-surface-variant opacity-40 cursor-not-allowed"
+            className={`p-2 border-[1px] border-primary transition-all shadow-[2px_2px_0_var(--color-primary)] active:shadow-none active:translate-x-1 active:translate-y-1 ${
+              isDebugging ? "bg-background text-primary hover:bg-primary hover:text-background" : "bg-background text-primary opacity-30 cursor-not-allowed"
             }`}
             disabled={!isDebugging}
             title="Terminar sesión de debug"
           >
-            <span className="material-symbols-outlined">stop</span>
+            <span className="material-symbols-outlined text-[18px]">stop</span>
           </button>
         )}
 
-        <div className="h-4 w-px bg-outline-variant mx-1" />
+        <div className="h-8 w-[4px] bg-primary mx-2" />
 
         {/* Architecture Selector */}
-        <div className="flex items-center mx-1 border border-outline-variant rounded-sm overflow-hidden bg-surface-container-low h-7">
+        <div className="flex items-center border-[1px] border-primary bg-background h-10 px-2 shadow-[2px_2px_0_var(--color-primary)]">
           <select
             value={architecture}
             onChange={(e) => onArchitectureChange(e.target.value as any)}
-            className="bg-transparent text-body-sm font-body-sm text-on-surface px-2 outline-none cursor-pointer h-full border-none focus:ring-0"
+            className="bg-transparent text-primary font-pixel-title text-xs outline-none cursor-pointer h-full border-none focus:ring-0 uppercase"
             disabled={isDebugging || isLoading}
             title="Seleccionar Arquitectura RISC-V"
           >
-            <option value="single_cycle">Single Cycle</option>
-            <option value="multi_cycle">Multi Cycle</option>
-            <option value="pipeline">Pipeline</option>
+            <option className="bg-background text-primary" value="single_cycle">Single Cycle</option>
+            <option className="bg-background text-primary" value="multi_cycle">Multi Cycle</option>
+            <option className="bg-background text-primary" value="pipeline">Pipeline</option>
           </select>
         </div>
 
-        <div className="h-4 w-px bg-outline-variant mx-1" />
+        <div className="h-8 w-[4px] bg-primary mx-2" />
 
         {/* Settings */}
         <button
           onClick={onOpenSettings}
-          className="p-1 text-on-surface-variant hover:bg-surface-container-high transition-colors"
+          className="p-2 border-[1px] border-primary bg-background hover:bg-primary hover:text-background transition-all shadow-[2px_2px_0_var(--color-primary)] active:shadow-none active:translate-x-1 active:translate-y-1"
           title="Configuración"
         >
-          <span className="material-symbols-outlined">settings</span>
+          <span className="material-symbols-outlined text-[18px]">settings</span>
         </button>
 
         {/* PC Counter */}
-        <div className="flex items-center bg-surface-container-low px-3 h-7 border border-outline-variant ml-1">
-          <span className="font-code-sm text-code-sm text-primary">PC: {pcValue}</span>
+        <div className="flex items-center bg-background px-4 h-10 border-[1px] border-primary shadow-[2px_2px_0_var(--color-primary)] ml-2">
+          <span className="text-xs">PC: <span className="font-mono bg-primary/20 px-1">{pcValue}</span></span>
         </div>
 
-        <div className="h-4 w-px bg-outline-variant mx-1" />
+        <div className="h-8 w-[4px] bg-primary mx-2" />
 
         {/* User */}
         {isAuthenticated && user && (
-          <div className="flex items-center gap-2">
+          <div className="flex items-center gap-3">
             {user.picture ? (
               <img
                 src={user.picture}
                 alt={user.name}
-                className="w-6 h-6 rounded-full border border-outline-variant"
+                className="w-8 h-8 border-[1px] border-primary shadow-[2px_2px_0_var(--color-primary)]"
                 title={`${user.name} (${user.email})`}
               />
             ) : (
               <div
-                className="w-6 h-6 rounded-full bg-primary-container text-on-primary-container flex items-center justify-center text-[10px] font-bold"
+                className="w-8 h-8 bg-primary text-background flex items-center justify-center text-xs font-bold border-[1px] border-primary shadow-[2px_2px_0_var(--color-primary)]"
                 title={`${user.name} (${user.email})`}
               >
                 {user.name.charAt(0).toUpperCase()}
               </div>
             )}
-            <span className="font-body-sm text-body-sm text-on-surface-variant hidden sm:inline">
-              {user.name.split(" ")[0]}
-            </span>
             <button
               id="btn-logout"
               onClick={onLogout}
               title="Cerrar sesión"
-              className="p-1 text-on-surface-variant hover:bg-surface-container-high transition-colors"
+              className="p-2 border-[1px] border-primary bg-background hover:bg-primary hover:text-background transition-all shadow-[2px_2px_0_var(--color-primary)] active:shadow-none active:translate-x-1 active:translate-y-1"
             >
-              <span className="material-symbols-outlined">logout</span>
+              <span className="material-symbols-outlined text-[18px]">logout</span>
             </button>
           </div>
         )}

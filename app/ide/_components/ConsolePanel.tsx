@@ -7,62 +7,62 @@ interface ConsolePanelProps {
 }
 
 const LOG_COLORS: Record<LogEntry["type"], string> = {
-  success: "text-primary-fixed",
-  error:   "text-error",
-  info:    "text-secondary-fixed-dim",
+  success: "text-green-400",
+  error:   "text-red-400",
+  info:    "text-primary",
   warn:    "text-yellow-400",
 };
 
 const LOG_BG: Record<LogEntry["type"], string> = {
   success: "",
-  error:   "bg-error/5",
+  error:   "bg-red-400/20",
   info:    "",
-  warn:    "bg-yellow-400/5",
+  warn:    "bg-yellow-400/20",
 };
 
 export function ConsolePanel({ logs }: ConsolePanelProps) {
   return (
-    <section className="h-48 bg-inverse-surface text-inverse-on-surface border-t border-outline-variant flex flex-col z-10 pb-10 flex-shrink-0">
+    <section className="h-48 bg-background text-primary border-t-2 border-primary flex flex-col z-10 pb-2 flex-shrink-0 shadow-[inset_0_4px_0_var(--color-primary)]">
       {/* Tab bar */}
-      <div className="flex items-center h-8 bg-[#131b2e] px-3 border-b border-white/5 justify-between flex-shrink-0">
-        <div className="flex gap-4">
-          <button className="font-label-caps text-label-caps text-primary-fixed border-b border-primary-fixed pb-0.5">
+      <div className="flex items-center h-10 bg-primary/10 px-4 border-b-2 border-primary justify-between flex-shrink-0">
+        <div className="flex gap-4 h-full">
+          <button className="font-pixel-title text-xs text-primary border-b-2 border-primary h-full pt-1">
             CONSOLE
           </button>
-          <button className="font-label-caps text-label-caps opacity-30 cursor-not-allowed" disabled>
+          <button className="font-pixel-title text-xs opacity-30 cursor-not-allowed border-b-2 border-transparent h-full pt-1" disabled>
             OUTPUT
           </button>
-          <button className="font-label-caps text-label-caps opacity-30 cursor-not-allowed" disabled>
+          <button className="font-pixel-title text-xs opacity-30 cursor-not-allowed border-b-2 border-transparent h-full pt-1" disabled>
             PROBLEMS
           </button>
         </div>
-        <span className="font-code-sm text-[10px] text-white/30">
+        <span className="font-pixel-title text-[10px] text-primary/50 uppercase">
           {logs.length} message{logs.length !== 1 ? "s" : ""}
         </span>
       </div>
 
       {/* Log output */}
-      <div className="flex-1 p-3 font-code-sm text-code-sm overflow-y-auto leading-relaxed">
+      <div className="flex-1 p-4 font-mono text-sm overflow-y-auto leading-relaxed uppercase">
         {logs.map((log, i) => (
-          <div key={i} className={`flex gap-2 mt-0.5 px-1 py-0.5 ${LOG_BG[log.type]}`}>
+          <div key={i} className={`flex gap-3 mt-1 px-2 py-1 ${LOG_BG[log.type]}`}>
             <span className={`flex-shrink-0 font-bold ${LOG_COLORS[log.type]}`}>
-              [{log.type.toUpperCase()}]
+              [{log.type}]
             </span>
-            <span className={log.type === "error" ? "text-error" : "text-inverse-on-surface"}>
+            <span className={log.type === "error" ? "text-red-400" : "text-primary"}>
               {log.message}
             </span>
             {log.timestamp && (
-              <span className="ml-auto text-white/20 text-[10px] flex-shrink-0">{log.timestamp}</span>
+              <span className="ml-auto text-primary/30 text-[10px] flex-shrink-0 font-pixel-title pt-1">{log.timestamp}</span>
             )}
           </div>
         ))}
 
         {/* Input de debug (P1 roadmap) */}
-        <div className="flex gap-2 mt-2 items-center opacity-30">
-          <span className="text-primary-fixed-dim">{"> "}</span>
+        <div className="flex gap-2 mt-4 items-center opacity-30 px-2">
+          <span className="text-primary font-bold">{`C:\\>`}</span>
           <input
-            className="bg-transparent border-none p-0 w-full font-code-sm outline-none cursor-not-allowed"
-            placeholder="Debugger commands — próximamente..."
+            className="bg-transparent border-none p-0 w-full font-mono outline-none cursor-not-allowed text-primary uppercase"
+            placeholder="DEBUGGER COMMANDS — COMING SOON..."
             type="text"
             disabled
           />

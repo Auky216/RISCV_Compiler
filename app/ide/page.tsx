@@ -24,7 +24,7 @@ function IdePage() {
   
   // State: Code & CPU
   const [code, setCode] = useState(
-    `# RISC-V Program Entry\n.section .text\n.globl main\nmain:\n  addi x1, x0, 5    # Load 5 into x1\n  addi x2, x0, 10   # Load 10 into x2\n  add  x3, x1, x2   # x3 = x1 + x2\nloop:\n  beq  x0, x0, loop  # Infinite loop`
+    `# RISC-V Program Entry\n.section .text\n.globl main\nmain:\n  # Imprimir un numero en la consola (a7=1)\n  li a0, 2026\n  li a7, 1\n  ecall\n\n  # Salir del simulador (a7=10)\n  li a7, 10\n  ecall`
   );
   const [model, setModel] = useState<RiscvModel | null>(null);
   const [isLoading, setIsLoading] = useState(false);
@@ -37,8 +37,8 @@ function IdePage() {
   const [architecture, setArchitecture] = useState<"single_cycle" | "multi_cycle" | "pipeline">("single_cycle");
 
   // State: UI & Settings
-  const [activeView, setActiveView] = useState<"editor" | "memory" | "database" | "terminal">("editor");
-  const [activeTab, setActiveTab] = useState<"registers" | "memory" | "datapath" | "control">("registers");
+  const [activeView, setActiveView] = useState<"editor" | "datapath" | "control">("editor");
+  const [activeTab, setActiveTab] = useState<"registers" | "memory">("registers");
   const [settings, setSettings] = useState<IdeSettings>(DEFAULT_SETTINGS);
   const [isSettingsOpen, setIsSettingsOpen] = useState(false);
 
@@ -74,6 +74,12 @@ function IdePage() {
         type: "success",
         message: `Compilation finished in ${(endTime - startTime).toFixed(0)}ms. 0 errors.`,
       });
+
+      if (result.consoleOutput && result.consoleOutput.length > 0) {
+        result.consoleOutput.forEach((out: string) => {
+          addLog({ type: "info", message: `[STDOUT] ${out}` });
+        });
+      }
       
       if (result.hitLimit) {
         addLog({
@@ -101,6 +107,9 @@ function IdePage() {
       setModel(result);
       setIsDebugging(true);
       addLog({ type: "success", message: `Sesión de debug iniciada (ID: ${result.sessionId}).` });
+      if (result.disassembly) {
+        addLog({ type: "info", message: `[ASM] 0x${result.pc?.toString(16).padStart(8, '0').toUpperCase()}: ${result.disassembly}` });
+      }
     } catch (error: any) {
       addLog({ type: "error", message: error.message });
     } finally {
@@ -113,6 +122,17 @@ function IdePage() {
     try {
       const result = await RiscvService.stepSession(model.sessionId);
       setModel(result);
+
+      if (result.consoleOutput && result.consoleOutput.length > 0) {
+        result.consoleOutput.forEach((out: string) => {
+          addLog({ type: "info", message: `[STDOUT] ${out}` });
+        });
+      }
+      
+      if (result.disassembly && !result.isFinished) {
+        addLog({ type: "info", message: `[ASM] 0x${result.pc?.toString(16).padStart(8, '0').toUpperCase()}: ${result.disassembly}` });
+      }
+
       if (result.isFinished) {
         addLog({ type: "info", message: `Programa finalizado en el paso ${result.stepsExecuted}.` });
       }
@@ -167,142 +187,137 @@ function IdePage() {
   };
 
   return (
-    <>
-      <TopNavBar
-        user={user}
-        isAuthenticated={isAuthenticated}
-        isLoading={isLoading}
-        model={model}
-        onRun={handleRun}
-        onReset={handleReset}
-        onLogout={logout}
-        onOpenSettings={() => setIsSettingsOpen(true)}
-        isDebugging={isDebugging}
-        onDebugStart={handleDebugStart}
-        onStep={handleStep}
-        onStepBack={handleStepBack}
-        onStop={handleStop}
-        onUploadBin={handleUploadBin}
-        architecture={architecture}
-        onArchitectureChange={setArchitecture}
-      />
+    // h-screen + overflow-hidden = NOTHING scrolls at page level. Everything is contained.
+    <div style={{ height: "100vh", display: "flex", flexDirection: "column", overflow: "hidden" }}
+      className="font-mono text-primary bg-background selection:bg-primary selection:text-background">
 
-      <main className="flex flex-1 pt-toolbar-height overflow-hidden">
+      {/* TOP NAV - fixed height */}
+      <div style={{ flexShrink: 0 }}>
+        <TopNavBar
+          user={user}
+          isAuthenticated={isAuthenticated}
+          isLoading={isLoading}
+          model={model}
+          onRun={handleRun}
+          onReset={handleReset}
+          onLogout={logout}
+          onOpenSettings={() => setIsSettingsOpen(true)}
+          isDebugging={isDebugging}
+          onDebugStart={handleDebugStart}
+          onStep={handleStep}
+          onStepBack={handleStepBack}
+          onStop={handleStop}
+          onUploadBin={handleUploadBin}
+          architecture={architecture}
+          onArchitectureChange={setArchitecture}
+        />
+      </div>
+
+      {/* BODY: SideRail + Content — takes all remaining height */}
+      <div style={{ flex: 1, display: "flex", overflow: "hidden", minHeight: 0 }}>
+
+        {/* SIDE RAIL */}
         <SideRail activeView={activeView} onViewChange={setActiveView} />
 
-        <div className="flex flex-1 flex-col overflow-hidden">
-          <div className="flex flex-1 overflow-hidden">
-            {/* Main Area: currently only Editor is active */}
+        {/* CENTER: panels stacked vertically */}
+        <div style={{ flex: 1, display: "flex", flexDirection: "column", overflow: "hidden", minHeight: 0 }}>
+
+          {/* MAIN PANELS ROW */}
+          <div style={{ flex: 1, display: "flex", overflow: "hidden", minHeight: 0 }}>
+
             {activeView === "editor" && (
-              <CodeEditor 
-                code={code} 
-                onChange={setCode} 
-                fontSize={settings.fontSize} 
-                isBinaryMode={isBinaryMode}
-                currentLine={model?.currentLine} 
-              />
+              <>
+                {/* CODE EDITOR */}
+                <div style={{ flex: 1, overflow: "hidden", minWidth: 0 }}>
+                  <CodeEditor
+                    code={code}
+                    onChange={setCode}
+                    fontSize={settings.fontSize}
+                    isBinaryMode={isBinaryMode}
+                    currentLine={model?.currentLine}
+                  />
+                </div>
+
+                {/* RIGHT PANEL: Registers / Memory */}
+                <div style={{ width: "38%", display: "flex", flexDirection: "column", overflow: "hidden", borderLeft: "2px solid var(--color-primary)" }}>
+                  {/* Tab bar */}
+                  <div style={{ display: "flex", flexShrink: 0, background: "var(--color-primary)" }}>
+                    {(["registers", "memory"] as const).map(tab => (
+                      <button key={tab} onClick={() => setActiveTab(tab)}
+                        style={{
+                          flex: 1, padding: "8px 4px", fontSize: 11, fontWeight: "bold",
+                          textTransform: "uppercase", letterSpacing: 1, cursor: "pointer",
+                          background: activeTab === tab ? "#fff" : "transparent",
+                          color: activeTab === tab ? "var(--color-primary)" : "#fff",
+                          border: "none", borderRight: tab === "registers" ? "1px solid rgba(255,255,255,0.3)" : "none",
+                        }}>
+                        {tab === "registers" ? "Registers" : "Memory"}
+                      </button>
+                    ))}
+                  </div>
+                  {/* Content */}
+                  <div style={{ flex: 1, overflow: "hidden", position: "relative", minHeight: 0 }}>
+                    {activeTab === "registers" && (
+                      <div style={{ position: "absolute", inset: 0, overflowY: "auto" }}>
+                        <RegisterPanel model={model} displayFormat={settings.displayFormat} showZeroRegisters={settings.showZeroRegisters} />
+                      </div>
+                    )}
+                    {activeTab === "memory" && (
+                      <div style={{ position: "absolute", inset: 0, overflow: "hidden" }}>
+                        <MemoryMapPanel model={model} />
+                      </div>
+                    )}
+                  </div>
+                </div>
+              </>
             )}
 
-            {/* Right Panel: Registers or Memory Map */}
-            <section className="w-2/5 flex flex-col bg-surface-container-low border-l border-outline-variant">
-              {/* Tabs */}
-              <div className="flex items-center gap-4 px-4 bg-surface-container-low border-b border-outline-variant h-10 shrink-0">
-                <button
-                  onClick={() => setActiveTab("registers")}
-                  className={`font-label-md text-label-md transition-colors h-full px-2 border-b-2 ${
-                    activeTab === "registers"
-                      ? "text-primary border-primary"
-                      : "text-on-surface-variant border-transparent hover:text-on-surface"
-                  }`}
-                >
-                  REGISTERS
-                </button>
-                <button
-                  onClick={() => setActiveTab("memory")}
-                  className={`font-label-md text-label-md transition-colors h-full px-2 border-b-2 ${
-                    activeTab === "memory"
-                      ? "text-primary border-primary"
-                      : "text-on-surface-variant border-transparent hover:text-on-surface"
-                  }`}
-                >
-                  MEMORY MAP
-                </button>
-                <button
-                  onClick={() => setActiveTab("datapath")}
-                  className={`font-label-md text-label-md transition-colors h-full px-2 border-b-2 ${
-                    activeTab === "datapath"
-                      ? "text-primary border-primary"
-                      : "text-on-surface-variant border-transparent hover:text-on-surface"
-                  }`}
-                >
-                  DATAPATH
-                </button>
-                <button
-                  onClick={() => setActiveTab("control")}
-                  className={`font-label-md text-label-md transition-colors h-full px-2 border-b-2 ${
-                    activeTab === "control"
-                      ? "text-primary border-primary"
-                      : "text-on-surface-variant border-transparent hover:text-on-surface"
-                  }`}
-                >
-                  CONTROL TABLES
-                </button>
+            {activeView === "datapath" && (
+              <div style={{ flex: 1, overflow: "hidden" }}>
+                <DatapathPanel model={model} />
               </div>
+            )}
 
-              {/* Tab content */}
-              <div className="flex-1 overflow-hidden flex flex-col">
-                {activeTab === "registers" && (
-                  <RegisterPanel
-                    model={model}
-                    displayFormat={settings.displayFormat}
-                    showZeroRegisters={settings.showZeroRegisters}
-                  />
-                )}
-                {activeTab === "memory" && <MemoryMapPanel model={model} />}
-                {activeTab === "datapath" && <DatapathPanel model={model} />}
-                {activeTab === "control" && <TruthTablePanel model={model} />}
+            {activeView === "control" && (
+              <div style={{ flex: 1, overflow: "hidden" }}>
+                <TruthTablePanel model={model} />
               </div>
-            </section>
+            )}
           </div>
 
-          {/* Bottom Panel */}
-          <ConsolePanel logs={logs} />
+          {/* CONSOLE - fixed height at bottom */}
+          <div style={{ flexShrink: 0 }}>
+            <ConsolePanel logs={logs} />
+          </div>
         </div>
-      </main>
+      </div>
 
-      {/* Footer */}
-      <footer className="fixed bottom-0 left-0 w-full flex justify-between items-center px-panel-padding h-8 z-50 bg-surface-container-highest border-t border-outline-variant no-shadow font-code-sm text-code-sm text-on-surface-variant">
+      {/* FOOTER */}
+      <div style={{ flexShrink: 0 }} className="flex justify-between items-center px-4 h-8 bg-background border-t-2 border-primary font-pixel-title text-[10px] text-primary uppercase">
         <div className="flex items-center gap-4">
-          <span className="flex items-center gap-1">
-            <span className={`w-2 h-2 rounded-full ${isLoading ? "bg-yellow-400 animate-pulse" : "bg-primary"}`} />
-            {isLoading ? "Running..." : "Ready"}
+          <span className="flex items-center gap-2">
+            <span className={`w-2 h-2 ${isLoading ? "bg-yellow-400 animate-pulse" : "bg-primary"}`} />
+            {isLoading ? "RUNNING..." : "SYSTEM READY"}
           </span>
-          <span className="opacity-70">|</span>
-          <span>RV32I Toolchain v2.0</span>
+          <span className="opacity-50">|</span>
+          <span>RISC-V OS V2.0</span>
           {model && (
             <>
-              <span className="opacity-70">|</span>
-              <span className={`font-bold ${model.hitLimit ? "text-yellow-500" : "text-primary"}`}>
-                {model.stepsExecuted} steps {model.hitLimit && " (limit)"}
-              </span>
+              <span className="opacity-50">|</span>
+              <span className="font-bold">{model.stepsExecuted} STEPS</span>
             </>
           )}
         </div>
         <div className="flex gap-6">
-          <a className="opacity-70 hover:text-primary transition-colors" href="#">Docs</a>
-          <a className="opacity-70 hover:text-primary transition-colors" href="#">Report Bug</a>
+          <a className="opacity-50 hover:opacity-100" href="#">[DOCS]</a>
+          <a className="opacity-50 hover:opacity-100" href="#">[BUG_REPORT]</a>
         </div>
-      </footer>
+      </div>
 
-      {/* Modals */}
       {isSettingsOpen && (
-        <SettingsModal
-          settings={settings}
-          onSave={handleSaveSettings}
-          onClose={() => setIsSettingsOpen(false)}
-        />
+        <SettingsModal settings={settings} onSave={handleSaveSettings} onClose={() => setIsSettingsOpen(false)} />
       )}
-    </>
+    </div>
   );
 }
 

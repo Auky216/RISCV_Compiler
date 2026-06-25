@@ -21,23 +21,23 @@ export function RegisterPanel({ model, displayFormat, showZeroRegisters }: Regis
   );
 
   return (
-    <div className="flex-1 overflow-y-auto p-panel-padding pb-10">
+    <div className="flex-1 overflow-y-auto p-4 bg-background pb-10">
       {/* Format badge */}
-      <div className="flex items-center justify-between mb-2">
-        <span className="font-label-caps text-label-caps text-on-surface-variant tracking-widest">
+      <div className="flex items-center justify-between mb-4">
+        <span className="font-pixel-title text-xs text-primary uppercase">
           {rows.length === 32 ? "32 REGISTROS" : `${rows.length} MODIFICADOS`}
         </span>
-        <span className="font-code-sm text-[10px] text-outline border border-outline-variant px-1.5 py-0.5">
+        <span className="font-pixel-title text-[10px] text-background bg-primary px-2 py-1 uppercase shadow-[2px_2px_0_var(--color-primary)]">
           {displayFormat.toUpperCase()}
         </span>
       </div>
 
-      <div className="grid grid-cols-2 gap-gutter bg-outline-variant border border-outline-variant">
+      <div className="grid grid-cols-2 gap-[4px] bg-primary border-2 border-primary p-[4px] shadow-[2px_2px_0_var(--color-primary)]">
         {/* Header */}
-        <div className="bg-surface-container-highest p-1 text-center font-label-caps text-label-caps text-on-surface-variant">
+        <div className="bg-background p-2 text-center font-pixel-title text-[10px] text-primary uppercase">
           REG
         </div>
-        <div className="bg-surface-container-highest p-1 text-center font-label-caps text-label-caps text-on-surface-variant">
+        <div className="bg-background p-2 text-center font-pixel-title text-[10px] text-primary uppercase">
           VALUE ({displayFormat.toUpperCase()})
         </div>
 
@@ -47,18 +47,18 @@ export function RegisterPanel({ model, displayFormat, showZeroRegisters }: Regis
           return (
             <div key={i} className="contents">
               <div
-                className={`p-2 font-code-sm text-code-sm border-r border-outline-variant ${
-                  changed ? "bg-primary-fixed text-on-surface" : "bg-surface-container-lowest text-on-surface-variant"
+                className={`p-2 font-mono text-sm flex justify-between uppercase ${
+                  changed ? "bg-primary text-background font-bold shadow-[inset_0_0_8px_rgba(0,0,0,0.5)]" : "bg-background text-primary"
                 }`}
               >
-                x{i}{" "}
-                <span className="opacity-50">({name})</span>
+                <span>x{i}</span>
+                <span className={changed ? "opacity-70" : "opacity-50"}>({name})</span>
               </div>
               <div
-                className={`p-2 font-code-sm text-code-sm tabular-nums ${
+                className={`p-2 font-mono text-sm tabular-nums text-right ${
                   changed
-                    ? "text-primary font-bold bg-primary-fixed"
-                    : "text-outline bg-surface-container-lowest"
+                    ? "bg-primary text-background font-bold shadow-[inset_0_0_8px_rgba(0,0,0,0.5)]"
+                    : "bg-background text-primary"
                 }`}
               >
                 {getValue(i)}
@@ -69,8 +69,8 @@ export function RegisterPanel({ model, displayFormat, showZeroRegisters }: Regis
       </div>
 
       {!model && (
-        <p className="text-center font-body-sm text-body-sm text-outline mt-6">
-          Ejecuta un programa para ver los registros
+        <p className="text-center font-pixel-title text-[10px] text-primary mt-8 uppercase border-[1px] border-primary p-4 shadow-[2px_2px_0_var(--color-primary)]">
+          EJECUTA UN PROGRAMA PARA VER LOS REGISTROS
         </p>
       )}
     </div>

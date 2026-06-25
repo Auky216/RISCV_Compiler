@@ -18,4 +18,6 @@ export interface RiscvRunResponse {
   pc?: number;
   current_line?: number;
   control_signals?: Record<string, number>;
+  console_output?: string[];
+  disassembly?: string;
 }

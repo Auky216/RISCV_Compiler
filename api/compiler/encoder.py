@@ -243,6 +243,9 @@ def encode_instruction(instruccion_ensamblador: str) -> str:
         
         binario_32_bits = inmediato_binario + registro_base + funct3 + registro_destino + opcode
 
+    elif mnemonico == "ecall":
+        return "0x00000073"
+
     else:
         return "Error: Instrucción no encontrada"
 

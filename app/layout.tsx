@@ -1,5 +1,5 @@
 import type { Metadata } from "next";
-import { Inter, JetBrains_Mono } from "next/font/google";
+import { Inter, JetBrains_Mono, VT323, Press_Start_2P } from "next/font/google";
 import "./globals.css";
 import { AuthProvider } from "@/lib/auth-context";
 
@@ -10,6 +10,18 @@ const inter = Inter({
 
 const jetbrainsMono = JetBrains_Mono({
   variable: "--font-jetbrains-mono",
+  subsets: ["latin"],
+});
+
+const vt323 = VT323({
+  weight: "400",
+  variable: "--font-vt323",
+  subsets: ["latin"],
+});
+
+const pressStart = Press_Start_2P({
+  weight: "400",
+  variable: "--font-press-start",
   subsets: ["latin"],
 });
 
@@ -26,7 +38,7 @@ export default function RootLayout({
   return (
     <html
       lang="en"
-      className={`light ${inter.variable} ${jetbrainsMono.variable} h-full antialiased`}
+      className={`dark ${inter.variable} ${jetbrainsMono.variable} ${vt323.variable} ${pressStart.variable} h-full antialiased`}
     >
       <head>
         <link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&display=swap" rel="stylesheet" />

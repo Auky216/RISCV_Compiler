@@ -34,6 +34,12 @@ router = APIRouter(prefix="", tags=["RISC-V"])
 DEFAULT_MAX_STEPS = 10_000
 MEMORY_SNAPSHOT_BYTES = 4096
 
+from capstone import Cs, CS_ARCH_RISCV, CS_MODE_RISCV32
+from elftools.elf.elffile import ELFFile
+import io
+
+md = Cs(CS_ARCH_RISCV, CS_MODE_RISCV32)
+
 class DebugSession:
     def __init__(self, program_bytes: bytearray, architecture: str, pc_to_line_map: dict = None):
         self.architecture = architecture
@@ -46,6 +52,7 @@ class DebugSession:
         self.memory = bytearray(8192) # 8KB de memoria para el backend
         self.history = [] # Historial para poder retroceder
         self.control_signals = {} # Para iluminar el SVG Datapath
+        self.console_output = [] # Para salidas de ecall
         
         # Copiamos el programa al inicio de la memoria
         size = min(len(program_bytes), len(self.memory))
@@ -92,6 +99,31 @@ def execute_single_cycle_step(session: DebugSession):
         session.is_finished = True
         return
         
+    # ECALL (Syscall) Support
+    if Instr == 0x00000073:
+        a7 = sc_reg.rf[17]
+        a0 = sc_reg.rf[10]
+        if a7 == 1:
+            session.console_output.append(str(a0))
+        elif a7 == 4:
+            s = ""
+            addr = a0
+            while addr < len(sc_dmem.RAM):
+                b = sc_dmem.RAM[addr]
+                if b == 0:
+                    break
+                s += chr(b)
+                addr += 1
+            session.console_output.append(s)
+        elif a7 == 11:
+            session.console_output.append(chr(a0 & 0xFF))
+        elif a7 == 10:
+            session.is_finished = True
+        
+        session.pc += 4
+        session.steps_executed += 1
+        return
+
     ImmSrc, RegWrite, ALUSrc, ALUControl, MemWrite, ResultSrc, Jump, BranchType = CONTROL_UNIT(Instr)
     
     PCNext, ALUResult, WriteData, Zero, ImmExt, a3, PCPlus4, PCTarget, PCSrc = DATAPATH(
@@ -121,7 +153,7 @@ def peek_control_signals(session: DebugSession):
     inject_state(session)
     Instr = sc_imem.INSTRUCTION_MEMORY(session.pc)
     
-    if Instr == 0:
+    if Instr == 0 or Instr == 0x00000073:
         return {}
         
     ImmSrc, RegWrite, ALUSrc, ALUControl, MemWrite, ResultSrc, Jump, BranchType = CONTROL_UNIT(Instr)
@@ -159,6 +191,13 @@ def peek_control_signals(session: DebugSession):
     }
 
 def build_response(session: DebugSession, session_id: str = ""):
+    disasm = ""
+    if not session.is_finished and session.pc < len(session.memory) - 3:
+        instr_bytes = session.memory[session.pc:session.pc+4]
+        for i in md.disasm(bytes(instr_bytes), session.pc):
+            disasm = f"{i.mnemonic} {i.op_str}"
+            break
+
     return {
         "status": "success",
         "session_id": session_id,
@@ -170,7 +209,9 @@ def build_response(session: DebugSession, session_id: str = ""):
         "program_size": session.program_size,
         "pc": session.pc,
         "current_line": session.pc_to_line_map.get(session.pc, None),
-        "control_signals": peek_control_signals(session)
+        "control_signals": peek_control_signals(session),
+        "console_output": session.console_output,
+        "disassembly": disasm,
     }
 
 # =========================================================
@@ -231,20 +272,37 @@ def debug_start(req: RunRequest):
     
     return build_response(session, session_id)
 
-@router.post("/upload_bin", summary="Cargar binario (.bin)")
+@router.post("/upload_bin", summary="Cargar binario o ELF (.bin o .elf)")
 def upload_bin(
     file: UploadFile = File(...),
     architecture: str = Form("single_cycle")
 ):
-    if not file.filename.endswith(".bin"):
-        raise HTTPException(status_code=400, detail="El archivo debe tener extensión .bin")
+    if not (file.filename.endswith(".bin") or file.filename.endswith(".elf")):
+        raise HTTPException(status_code=400, detail="El archivo debe tener extensión .bin o .elf")
     
     bytes_leidos = file.file.read()
     if len(bytes_leidos) == 0:
         raise HTTPException(status_code=400, detail="El archivo está vacío.")
         
+    program_memory = bytearray(8192)
+    if file.filename.endswith(".elf"):
+        try:
+            elffile = ELFFile(io.BytesIO(bytes_leidos))
+            for segment in elffile.iter_segments():
+                if segment['p_type'] == 'PT_LOAD':
+                    p_paddr = segment['p_paddr']
+                    data = segment.data()
+                    if p_paddr < len(program_memory):
+                        size = min(len(data), len(program_memory) - p_paddr)
+                        program_memory[p_paddr:p_paddr+size] = data[:size]
+            bytes_to_load = program_memory
+        except Exception as e:
+            raise HTTPException(status_code=400, detail=f"Error al procesar ELF: {e}")
+    else:
+        bytes_to_load = bytearray(bytes_leidos)
+
     session_id = str(uuid.uuid4())
-    session = DebugSession(bytearray(bytes_leidos), architecture)
+    session = DebugSession(bytes_to_load, architecture)
     debug_sessions[session_id] = session
     
     return build_response(session, session_id)

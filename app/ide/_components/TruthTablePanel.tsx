@@ -68,22 +68,19 @@ export function TruthTablePanel({ model }: TruthTablePanelProps) {
   ];
 
   const getRowClass = (isActive: boolean) => {
-    return isActive ? "bg-red-50 text-red-600 font-bold" : "text-on-surface bg-white";
+    return isActive ? "bg-primary text-background font-bold shadow-[inset_0_0_8px_rgba(0,0,0,0.5)]" : "text-primary bg-background";
   };
 
   const isActiveOpcode = (rowOpcodeStr: string) => {
     return model !== null && !model.isFinished && opcode === parseInt(rowOpcodeStr, 2);
   };
 
-  // Determinar la fila activa del ALU Decoder
-  // Para hacerlo perfecto, evaluamos el estado actual si coincide
   const isActiveAluDecoder = (row: any) => {
     if (model === null || model.isFinished) return false;
-    // Si el opcode activo concuerda con el ALUOp esperado
-    const isRType = opcode === 51; // 0110011
-    const isIType = opcode === 19; // 0010011
-    const isLwSw = opcode === 3 || opcode === 35; // 0000011, 0100011
-    const isBeq = opcode === 99; // 1100011
+    const isRType = opcode === 51;
+    const isIType = opcode === 19;
+    const isLwSw = opcode === 3 || opcode === 35;
+    const isBeq = opcode === 99;
     
     let currentALUOp = "xx";
     if (isLwSw) currentALUOp = "00";
@@ -99,29 +96,49 @@ export function TruthTablePanel({ model }: TruthTablePanelProps) {
     if (funct3Str === "000") {
       const op5 = (opcode >> 5) & 1;
       const funct7_5 = (instr >> 30) & 1;
-      const val = `${op5}${funct7_5}`; // 00, 01, 10, 11
+      const val = `${op5}${funct7_5}`;
       if (row.op_funct7 === "11") return val === "11";
       return val === "00" || val === "01" || val === "10";
     }
     
-    return true; // para los otros funct3
+    return true;
   };
 
   return (
-    <div className="flex-1 w-full h-full bg-surface-container-lowest relative overflow-hidden flex flex-col">
-      <div className="absolute top-4 right-4 z-10 flex gap-2 bg-surface-bright p-1 rounded border border-outline-variant shadow-sm">
-        <button onClick={zoomIn} className="p-2 hover:bg-surface-container rounded text-on-surface material-symbols-outlined" title="Zoom In">zoom_in</button>
-        <button onClick={zoomOut} className="p-2 hover:bg-surface-container rounded text-on-surface material-symbols-outlined" title="Zoom Out">zoom_out</button>
-        <button onClick={resetZoom} className="p-2 hover:bg-surface-container rounded text-on-surface material-symbols-outlined" title="Reset View">fit_screen</button>
+    <div className="flex-1 w-full h-full bg-background relative overflow-hidden flex flex-col">
+      {/* Header bar */}
+      <div className="flex items-center justify-between px-4 py-3 bg-background border-b-2 border-primary gap-4 flex-shrink-0 shadow-[0_2px_0_var(--color-primary)] z-10">
+        <div className="flex items-center gap-4">
+          <span className="font-pixel-title text-xs text-primary uppercase">
+            TABLAS DE VERDAD DE CONTROL / CONTROL TRUTH TABLES
+          </span>
+        </div>
+        {model && (
+          <div className="flex items-center gap-3 bg-yellow-200 border-2 border-primary px-4 py-2 font-mono text-base text-primary shadow-[4px_4px_0_var(--color-primary)] font-extrabold">
+            <span className="text-xs font-pixel-title animate-pulse text-red-500">▶</span>
+            <span>ASM: 0x{model.pc?.toString(16).toUpperCase().padStart(8, '0')} — {model.disassembly || "EJECUTANDO..."}</span>
+          </div>
+        )}
+      </div>
+
+      <div className="absolute top-16 right-4 z-10 flex gap-2 bg-background p-2 border-2 border-primary shadow-[2px_2px_0_var(--color-primary)]">
+        <button onClick={zoomIn} className="p-2 hover:bg-primary hover:text-background border-[1px] border-transparent hover:border-background rounded-none text-primary material-symbols-outlined transition-colors" title="Zoom In">zoom_in</button>
+        <button onClick={zoomOut} className="p-2 hover:bg-primary hover:text-background border-[1px] border-transparent hover:border-background rounded-none text-primary material-symbols-outlined transition-colors" title="Zoom Out">zoom_out</button>
+        <button onClick={resetZoom} className="p-2 hover:bg-primary hover:text-background border-[1px] border-transparent hover:border-background rounded-none text-primary material-symbols-outlined transition-colors" title="Reset View">fit_screen</button>
       </div>
 
       <div 
-        className="flex-1 w-full h-full bg-white cursor-grab active:cursor-grabbing overflow-hidden"
+        className="flex-1 w-full h-full bg-background cursor-grab active:cursor-grabbing overflow-hidden"
         onWheel={handleWheel}
         onMouseDown={handleMouseDown}
         onMouseMove={handleMouseMove}
         onMouseUp={handleMouseUp}
         onMouseLeave={handleMouseUp}
+        style={{
+          backgroundImage: "radial-gradient(rgba(37,99,235,0.15) 1px, transparent 1px)",
+          backgroundSize: "24px 24px",
+          backgroundPosition: "0 0"
+        }}
       >
         <div 
           className="w-full h-full flex flex-col items-center justify-center pt-8"
@@ -131,23 +148,23 @@ export function TruthTablePanel({ model }: TruthTablePanelProps) {
             transition: isDragging ? "none" : "transform 0.1s ease-out"
           }}
         >
-          <div className="flex flex-col items-center pointer-events-none p-8">
-            <h2 className="text-xl font-bold mb-2 text-black text-center">Table 1. Main Decoder Truth Table</h2>
-            <div className="border-2 border-black w-full max-w-5xl mb-12">
-        <table className="w-full text-left text-sm whitespace-nowrap border-collapse">
+          <div className="flex flex-col items-center pointer-events-none p-8 bg-background border-2 border-primary shadow-[2px_2px_0_var(--color-primary)]">
+            <h2 className="text-xs font-pixel-title mb-4 text-center uppercase bg-primary text-background px-3 py-2 inline-block border-2 border-primary">Tabla 1: Decodificador Principal (Main Decoder)</h2>
+            <div className="border-2 border-primary w-full max-w-5xl mb-12 bg-primary p-1">
+        <table className="w-full text-left text-sm whitespace-nowrap border-collapse bg-background">
           <thead>
             <tr>
-              <th className="px-4 py-2 border-2 border-black bg-[#0070C0] text-white font-bold text-center">Instruction</th>
-              <th className="px-4 py-2 border-2 border-black bg-[#0070C0] text-white font-bold text-center">Opcode</th>
-              <th className="px-4 py-2 border-2 border-black bg-[#0070C0] text-white font-bold text-center">RegWrite</th>
-              <th className="px-4 py-2 border-2 border-black bg-[#0070C0] text-white font-bold text-center">ImmSrc</th>
-              <th className="px-4 py-2 border-2 border-black bg-[#0070C0] text-white font-bold text-center">ALUSrcA</th>
-              <th className="px-4 py-2 border-2 border-black bg-[#0070C0] text-white font-bold text-center">ALUSrcB</th>
-              <th className="px-4 py-2 border-2 border-black bg-[#0070C0] text-white font-bold text-center">MemWrite</th>
-              <th className="px-4 py-2 border-2 border-black bg-[#0070C0] text-white font-bold text-center">ResultSrc</th>
-              <th className="px-4 py-2 border-2 border-black bg-[#0070C0] text-white font-bold text-center">Branch</th>
-              <th className="px-4 py-2 border-2 border-black bg-[#0070C0] text-white font-bold text-center">ALUOp</th>
-              <th className="px-4 py-2 border-2 border-black bg-[#0070C0] text-white font-bold text-center">Jump</th>
+              <th className="px-3 py-1.5 border-2 border-primary bg-primary text-background font-pixel-title text-[10px] uppercase text-center">Instruction</th>
+              <th className="px-3 py-1.5 border-2 border-primary bg-primary text-background font-pixel-title text-[10px] uppercase text-center">Opcode</th>
+              <th className="px-3 py-1.5 border-2 border-primary bg-primary text-background font-pixel-title text-[10px] uppercase text-center">RegWrite</th>
+              <th className="px-3 py-1.5 border-2 border-primary bg-primary text-background font-pixel-title text-[10px] uppercase text-center">ImmSrc</th>
+              <th className="px-3 py-1.5 border-2 border-primary bg-primary text-background font-pixel-title text-[10px] uppercase text-center">ALUSrcA</th>
+              <th className="px-3 py-1.5 border-2 border-primary bg-primary text-background font-pixel-title text-[10px] uppercase text-center">ALUSrcB</th>
+              <th className="px-3 py-1.5 border-2 border-primary bg-primary text-background font-pixel-title text-[10px] uppercase text-center">MemWrite</th>
+              <th className="px-3 py-1.5 border-2 border-primary bg-primary text-background font-pixel-title text-[10px] uppercase text-center">ResultSrc</th>
+              <th className="px-3 py-1.5 border-2 border-primary bg-primary text-background font-pixel-title text-[10px] uppercase text-center">Branch</th>
+              <th className="px-3 py-1.5 border-2 border-primary bg-primary text-background font-pixel-title text-[10px] uppercase text-center">ALUOp</th>
+              <th className="px-3 py-1.5 border-2 border-primary bg-primary text-background font-pixel-title text-[10px] uppercase text-center">Jump</th>
             </tr>
           </thead>
           <tbody>
@@ -155,17 +172,17 @@ export function TruthTablePanel({ model }: TruthTablePanelProps) {
               const active = isActiveOpcode(row.Opcode);
               return (
                 <tr key={i} className={getRowClass(active)}>
-                  <td className="px-4 py-1 border-2 border-black font-mono">{row.Instruction}</td>
-                  <td className="px-4 py-1 border-2 border-black font-mono text-center">{row.Opcode}</td>
-                  <td className="px-4 py-1 border-2 border-black text-center">{row.RegWrite}</td>
-                  <td className="px-4 py-1 border-2 border-black text-center">{row.ImmSrc}</td>
-                  <td className="px-4 py-1 border-2 border-black text-center">{row.ALUSrcA}</td>
-                  <td className="px-4 py-1 border-2 border-black text-center">{row.ALUSrcB}</td>
-                  <td className="px-4 py-1 border-2 border-black text-center">{row.MemWrite}</td>
-                  <td className="px-4 py-1 border-2 border-black text-center">{row.ResultSrc}</td>
-                  <td className="px-4 py-1 border-2 border-black text-center">{row.Branch}</td>
-                  <td className="px-4 py-1 border-2 border-black text-center">{row.ALUOp}</td>
-                  <td className="px-4 py-1 border-2 border-black text-center">{row.Jump}</td>
+                  <td className="px-3 py-1.5 border-[1px] border-primary font-mono uppercase">{row.Instruction}</td>
+                  <td className="px-3 py-1.5 border-[1px] border-primary font-mono text-center">{row.Opcode}</td>
+                  <td className="px-3 py-1.5 border-[1px] border-primary text-center">{row.RegWrite}</td>
+                  <td className="px-3 py-1.5 border-[1px] border-primary text-center">{row.ImmSrc}</td>
+                  <td className="px-3 py-1.5 border-[1px] border-primary text-center">{row.ALUSrcA}</td>
+                  <td className="px-3 py-1.5 border-[1px] border-primary text-center">{row.ALUSrcB}</td>
+                  <td className="px-3 py-1.5 border-[1px] border-primary text-center">{row.MemWrite}</td>
+                  <td className="px-3 py-1.5 border-[1px] border-primary text-center">{row.ResultSrc}</td>
+                  <td className="px-3 py-1.5 border-[1px] border-primary text-center">{row.Branch}</td>
+                  <td className="px-3 py-1.5 border-[1px] border-primary text-center">{row.ALUOp}</td>
+                  <td className="px-3 py-1.5 border-[1px] border-primary text-center">{row.Jump}</td>
                 </tr>
               );
             })}
@@ -173,16 +190,16 @@ export function TruthTablePanel({ model }: TruthTablePanelProps) {
         </table>
       </div>
 
-      <h2 className="text-xl font-bold mb-2 text-black text-center">Table 2. ALU Decoder Truth Table</h2>
-      <div className="border-2 border-black w-full max-w-3xl">
-        <table className="w-full text-left text-sm whitespace-nowrap border-collapse">
+      <h2 className="text-xs font-pixel-title mb-4 text-center uppercase bg-primary text-background px-3 py-2 inline-block border-2 border-primary">Tabla 2: Decodificador de ALU (ALU Decoder)</h2>
+      <div className="border-2 border-primary w-full max-w-3xl bg-primary p-1">
+        <table className="w-full text-left text-sm whitespace-nowrap border-collapse bg-background">
           <thead>
             <tr>
-              <th className="px-4 py-2 border-2 border-black bg-[#0070C0] text-white font-bold italic">ALUOp<sub className="text-[10px] not-italic">1:0</sub></th>
-              <th className="px-4 py-2 border-2 border-black bg-[#0070C0] text-white font-bold italic">funct3<sub className="text-[10px] not-italic">2:0</sub></th>
-              <th className="px-4 py-2 border-2 border-black bg-[#0070C0] text-white font-bold italic">&#123;op<sub className="text-[10px] not-italic">5</sub>, funct7<sub className="text-[10px] not-italic">5</sub>&#125;</th>
-              <th className="px-4 py-2 border-2 border-black bg-[#0070C0] text-white font-bold italic">ALUControl<sub className="text-[10px] not-italic">2:0</sub></th>
-              <th className="px-4 py-2 border-2 border-black bg-[#0070C0] text-white font-bold">Operation</th>
+              <th className="px-3 py-1.5 border-2 border-primary bg-primary text-background font-pixel-title text-[10px] uppercase text-center">ALUOp<sub className="text-[8px] ml-1">1:0</sub></th>
+              <th className="px-3 py-1.5 border-2 border-primary bg-primary text-background font-pixel-title text-[10px] uppercase text-center">funct3<sub className="text-[8px] ml-1">2:0</sub></th>
+              <th className="px-3 py-1.5 border-2 border-primary bg-primary text-background font-pixel-title text-[10px] uppercase text-center">&#123;op<sub className="text-[8px] mx-1">5</sub>, funct7<sub className="text-[8px] mx-1">5</sub>&#125;</th>
+              <th className="px-3 py-1.5 border-2 border-primary bg-primary text-background font-pixel-title text-[10px] uppercase text-center">ALUControl<sub className="text-[8px] ml-1">2:0</sub></th>
+              <th className="px-3 py-1.5 border-2 border-primary bg-primary text-background font-pixel-title text-[10px] uppercase text-center">Operation</th>
             </tr>
           </thead>
           <tbody>
@@ -190,11 +207,11 @@ export function TruthTablePanel({ model }: TruthTablePanelProps) {
               const active = isActiveAluDecoder(row);
               return (
                 <tr key={i} className={getRowClass(active)}>
-                  <td className="px-4 py-1 border-2 border-black font-mono">{row.ALUOp}</td>
-                  <td className="px-4 py-1 border-2 border-black font-mono text-center">{row.funct3}</td>
-                  <td className="px-4 py-1 border-2 border-black font-mono text-center">{row.op_funct7}</td>
-                  <td className="px-4 py-1 border-2 border-black font-mono text-center">{row.ALUControl}</td>
-                  <td className="px-4 py-1 border-2 border-black">{row.Operation}</td>
+                  <td className="px-3 py-1.5 border-[1px] border-primary font-mono text-center">{row.ALUOp}</td>
+                  <td className="px-3 py-1.5 border-[1px] border-primary font-mono text-center">{row.funct3}</td>
+                  <td className="px-3 py-1.5 border-[1px] border-primary font-mono text-center">{row.op_funct7}</td>
+                  <td className="px-3 py-1.5 border-[1px] border-primary font-mono text-center">{row.ALUControl}</td>
+                  <td className="px-3 py-1.5 border-[1px] border-primary font-mono uppercase text-center">{row.Operation}</td>
                 </tr>
               );
             })}

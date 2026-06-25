@@ -3,76 +3,110 @@
 import { useAuth } from "@/lib/auth-context";
 import { UserService } from "@/domain/user/service";
 import { useRouter } from "next/navigation";
-import { useEffect } from "react";
+import { motion } from "framer-motion";
+import { useState, useEffect } from "react";
+import { Cpu, Terminal, ShieldCheck, ArrowRight, Server, Database, Code, Cog } from "lucide-react";
 
-// ── Íconos SVG inline ──────────────────────────────────────────────────────────
-const IconChip = () => (
-  <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round">
-    <rect x="9" y="9" width="6" height="6" /><path d="M9 2v2M15 2v2M9 20v2M15 20v2M2 9h2M2 15h2M20 9h2M20 15h2" /><rect x="4" y="4" width="16" height="16" rx="2" />
-  </svg>
-);
-const IconCpu = () => (
-  <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round">
-    <rect x="4" y="4" width="16" height="16" rx="2" /><rect x="9" y="9" width="6" height="6" />
-    <path d="M9 2v2M15 2v2M9 20v2M15 20v2M2 9h2M2 15h2M20 9h2M20 15h2" />
-  </svg>
-);
-const IconUser = () => (
-  <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round">
-    <path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2" /><circle cx="12" cy="7" r="4" />
-  </svg>
-);
-const IconArrow = () => (
-  <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-    <path d="M5 12h14M12 5l7 7-7 7" />
-  </svg>
-);
+// Google Icon SVG
 const IconGoogle = () => (
-  <svg width="18" height="18" viewBox="0 0 18 18" aria-hidden="true">
-    <path fill="#4285F4" d="M17.64 9.2c0-.637-.057-1.251-.164-1.84H9v3.481h4.844c-.209 1.125-.843 2.078-1.796 2.717v2.258h2.908c1.702-1.567 2.684-3.875 2.684-6.615Z"/>
-    <path fill="#34A853" d="M9 18c2.43 0 4.467-.806 5.956-2.18l-2.908-2.259c-.806.54-1.837.86-3.048.86-2.344 0-4.328-1.584-5.036-3.711H.957v2.332A8.997 8.997 0 0 0 9 18Z"/>
-    <path fill="#FBBC05" d="M3.964 10.71A5.41 5.41 0 0 1 3.682 9c0-.593.102-1.17.282-1.71V4.958H.957A8.996 8.996 0 0 0 0 9c0 1.452.348 2.827.957 4.042l3.007-2.332Z"/>
-    <path fill="#EA4335" d="M9 3.58c1.321 0 2.508.454 3.44 1.345l2.582-2.58C13.463.891 11.426 0 9 0A8.997 8.997 0 0 0 .957 4.958L3.964 7.29C4.672 5.163 6.656 3.58 9 3.58Z"/>
+  <svg width="18" height="18" viewBox="0 0 18 18" aria-hidden="true" className="inline-block mr-2">
+    <path fill="currentColor" d="M17.64 9.2c0-.637-.057-1.251-.164-1.84H9v3.481h4.844c-.209 1.125-.843 2.078-1.796 2.717v2.258h2.908c1.702-1.567 2.684-3.875 2.684-6.615Z"/>
+    <path fill="currentColor" d="M9 18c2.43 0 4.467-.806 5.956-2.18l-2.908-2.259c-.806.54-1.837.86-3.048.86-2.344 0-4.328-1.584-5.036-3.711H.957v2.332A8.997 8.997 0 0 0 9 18Z"/>
+    <path fill="currentColor" d="M3.964 10.71A5.41 5.41 0 0 1 3.682 9c0-.593.102-1.17.282-1.71V4.958H.957A8.996 8.996 0 0 0 0 9c0 1.452.348 2.827.957 4.042l3.007-2.332Z"/>
+    <path fill="currentColor" d="M9 3.58c1.321 0 2.508.454 3.44 1.345l2.582-2.58C13.463.891 11.426 0 9 0A8.997 8.997 0 0 0 .957 4.958L3.964 7.29C4.672 5.163 6.656 3.58 9 3.58Z"/>
   </svg>
 );
 
-// ── Datos de features ──────────────────────────────────────────────────────────
+const IconGithub = () => (
+  <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+    <path d="M15 22v-4a4.8 4.8 0 0 0-1-3.2c3-.3 6-1.5 6-6.5 0-1.4-.5-2.6-1.5-3.5.2-.5.7-1.7-.1-3.5 0 0-1.2-.4-3.8 1.4A13 13 0 0 0 12 3a13 13 0 0 0-3.3.4c-2.6-1.8-3.8-1.4-3.8-1.4-.8 1.8-.3 3-.1 3.5-1 .9-1.5 2.1-1.5 3.5 0 5 3 6.2 6 6.5a4.8 4.8 0 0 0-1 3.2v4"></path>
+  </svg>
+);
+
 const FEATURES = [
   {
-    icon: <IconChip />,
-    title: "Compilador en tiempo real",
-    description:
-      "Ensamblador de 2 pasadas con resolución automática de etiquetas (labels). Soporta instrucciones RV32I: tipo R, I, S, B, U y J.",
-    badge: "RV32I ISA",
+    icon: <Terminal className="w-8 h-8" />,
+    title: "Assembler",
+    description: "> CAPSTONE DISASSEMBLER INTEGRATED.",
+    animation: { y: [0, -5, 0], transition: { repeat: Infinity, duration: 2 } }
   },
   {
-    icon: <IconCpu />,
-    title: "Simulador de CPU completo",
-    description:
-      "32 registros (x0–x31) con nombres ABI, 1 MB de memoria virtual. Visualiza el estado exacto de cada registro tras la ejecución.",
-    badge: "32 registros",
+    icon: <Cpu className="w-8 h-8" />,
+    title: "Cycle-Accurate CPU",
+    description: "> FULL RV32I ISA SUPPORT DETECTED.",
+    animation: { scale: [1, 1.1, 1], transition: { repeat: Infinity, duration: 1.5 } }
   },
   {
-    icon: <IconUser />,
-    title: "Tu perfil guardado",
-    description:
-      "Inicia sesión con Google para guardar tu perfil de forma segura. Tu historial y programas disponibles desde cualquier dispositivo.",
-    badge: "Google OAuth",
+    icon: <ShieldCheck className="w-8 h-8" />,
+    title: "Cloud Sync",
+    description: "> UPLINK ESTABLISHED. DATA SECURED.",
+    animation: { opacity: [1, 0.5, 1], transition: { repeat: Infinity, duration: 2 } }
+  },
+  {
+    icon: <Database className="w-8 h-8" />,
+    title: "Memory Mapper",
+    description: "> 1MB VIRTUAL SPACE ALLOCATED.",
+    animation: { y: [0, 5, 0], transition: { repeat: Infinity, duration: 3 } }
+  },
+  {
+    icon: <Server className="w-8 h-8" />,
+    title: "Datapath Viewer",
+    description: "> REAL-TIME MULTIPLEXER ROUTING.",
+    animation: { x: [0, -3, 3, 0], transition: { repeat: Infinity, duration: 0.5, repeatDelay: 2 } }
+  },
+  {
+    icon: <Cog className="w-8 h-8" />,
+    title: "ABI Conventions",
+    description: "> REGISTER ALIASES LOADED.",
+    animation: { rotate: 360, transition: { repeat: Infinity, duration: 4, ease: "linear" } }
   },
 ];
 
-const STEPS = [
-  { num: "01", title: "Escribe", desc: "Código ensamblador RISC-V en el editor integrado con numeración de líneas." },
-  { num: "02", title: "Compila", desc: "Un click en Run — el ensamblador de 2 pasadas procesa tus etiquetas e instrucciones al instante." },
-  { num: "03", title: "Inspecciona", desc: "Ve el valor exacto de cada uno de los 32 registros en hexadecimal y detecta qué cambió." },
-];
+const TypewriterText = ({ text, delay = 0 }: { text: string, delay?: number }) => {
+  const [displayed, setDisplayed] = useState("");
+  
+  useEffect(() => {
+    let i = 0;
+    const timeout = setTimeout(() => {
+      const interval = setInterval(() => {
+        setDisplayed(text.slice(0, i));
+        i++;
+        if (i > text.length) clearInterval(interval);
+      }, 50);
+      return () => clearInterval(interval);
+    }, delay);
+    return () => clearTimeout(timeout);
+  }, [text, delay]);
 
-// ── Componente Principal ────────────────────────────────────────────────────────
+  return <span>{displayed}</span>;
+};
+
+// Background Matrix/Terminal Effect
+const TerminalGrid = () => {
+  return (
+    <div className="absolute inset-0 z-0 overflow-hidden opacity-15 pointer-events-none flex flex-wrap gap-2 p-4 text-xs font-mono text-primary">
+      {Array.from({ length: 200 }).map((_, i) => (
+        <motion.div
+          key={i}
+          initial={{ opacity: 0 }}
+          animate={{ opacity: [0, 1, 0] }}
+          transition={{
+            duration: Math.random() * 3 + 2,
+            repeat: Infinity,
+            delay: Math.random() * 5,
+          }}
+        >
+          {Math.random() > 0.5 ? "0x" + Math.floor(Math.random() * 16777215).toString(16).toUpperCase() : Math.random() > 0.5 ? "1" : "0"}
+        </motion.div>
+      ))}
+    </div>
+  );
+};
+
 export default function LandingPage() {
   const { isAuthenticated, isLoading } = useAuth();
   const router = useRouter();
 
-  // Si ya está autenticado, ofrecer ir al IDE directamente
   const handleCTA = () => {
     if (isAuthenticated) {
       router.push("/ide");
@@ -81,266 +115,205 @@ export default function LandingPage() {
     }
   };
 
-  const ctaLabel = isLoading
-    ? "Cargando..."
-    : isAuthenticated
-    ? "Abrir IDE →"
-    : "Empezar gratis";
-
   return (
-    <div className="min-h-screen bg-surface-container-lowest text-on-surface overflow-x-hidden">
-      {/* ── Navbar ──────────────────────────────────────────────────────────── */}
-      <nav className="fixed top-0 left-0 right-0 z-50 flex items-center justify-between px-8 h-[56px] bg-surface-container-lowest/80 backdrop-blur border-b border-outline-variant">
-        <span className="font-display-mono text-display-mono text-primary tracking-tighter text-[18px]">
-          RISC-V Studio
-        </span>
+    <div className="min-h-screen bg-background text-foreground overflow-x-hidden selection:bg-primary selection:text-background flex flex-col font-mono relative">
+      <TerminalGrid />
+      
+      {/* Navbar */}
+      <nav className="relative z-50 w-full px-6 py-4 flex items-center justify-between border-b-[4px] border-primary bg-background">
         <div className="flex items-center gap-3">
-          {isAuthenticated ? (
-            <button
-              onClick={() => router.push("/ide")}
-              className="flex items-center gap-2 px-4 py-1.5 bg-primary text-on-primary font-body-sm text-body-sm hover:opacity-80 transition-opacity"
-            >
-              Ir al IDE
-              <IconArrow />
-            </button>
-          ) : (
-            <>
-              <a
-                href="/login"
-                className="font-body-sm text-body-sm text-on-surface-variant hover:text-on-surface transition-colors px-3 py-1.5"
-              >
-                Iniciar sesión
-              </a>
-              <button
-                onClick={handleCTA}
-                className="flex items-center gap-2 px-4 py-1.5 bg-primary text-on-primary font-body-sm text-body-sm hover:opacity-80 transition-opacity"
-              >
-                Empezar gratis
-              </button>
-            </>
-          )}
+          <motion.div 
+            animate={{ rotate: [0, 90, 180, 270, 360] }}
+            transition={{ repeat: Infinity, duration: 8, ease: "linear" }}
+            className="w-8 h-8 bg-primary text-background flex items-center justify-center font-bold text-lg font-pixel-title"
+          >
+            R
+          </motion.div>
+          <span className="font-pixel-title text-xl tracking-widest uppercase text-primary">RISC-V OS</span>
+        </div>
+        <div className="flex items-center gap-6">
+          <a href="https://github.com" target="_blank" rel="noreferrer" className="text-primary hover:opacity-70 transition-colors">
+            <IconGithub />
+          </a>
+          <button
+            onClick={handleCTA}
+            disabled={isLoading}
+            className="flex items-center gap-2 px-4 py-2 border-[3px] border-primary text-primary text-sm font-bold uppercase hover:bg-primary hover:text-background transition-all disabled:opacity-50 font-pixel-title shadow-[4px_4px_0_var(--color-primary)] active:shadow-[0_0_0_var(--color-primary)] active:translate-y-1 active:translate-x-1"
+          >
+            {isLoading ? "WAIT..." : isAuthenticated ? "BOOT_IDE" : "LOGIN"}
+          </button>
         </div>
       </nav>
 
-      {/* ── Hero ────────────────────────────────────────────────────────────── */}
-      <section className="relative flex flex-col items-center justify-center text-center pt-40 pb-32 px-6 overflow-hidden">
-        {/* Glow background */}
-        <div className="absolute top-20 left-1/2 -translate-x-1/2 w-[600px] h-[300px] bg-primary/10 rounded-full blur-[80px] pointer-events-none" />
-
-        {/* Badge */}
-        <div className="inline-flex items-center gap-2 px-3 py-1 border border-primary/30 bg-primary-container/20 font-code-sm text-code-sm text-primary mb-6">
-          <span className="w-1.5 h-1.5 rounded-full bg-primary animate-pulse" />
-          RV32I · Open Source · Sin instalación
-        </div>
-
-        {/* Title */}
-        <h1 className="font-display-mono text-[52px] sm:text-[64px] leading-none tracking-tight text-on-surface mb-4">
-          RISC-V
-          <span
-            className="block"
-            style={{
-              background: "linear-gradient(135deg, #00327d 0%, #2559bd 50%, #b1c5ff 100%)",
-              WebkitBackgroundClip: "text",
-              WebkitTextFillColor: "transparent",
-            }}
+      <main className="flex-1 flex flex-col items-center z-10 relative">
+        {/* Hero Section */}
+        <section className="w-full max-w-5xl mx-auto px-6 pt-32 pb-20 flex flex-col items-start border-b-[4px] border-primary border-dashed">
+          
+          <motion.div 
+            initial={{ opacity: 0, x: -20 }}
+            animate={{ opacity: 1, x: 0 }}
+            className="inline-flex items-center gap-2 px-3 py-1 mb-8 border-[3px] border-primary bg-background text-xs font-pixel-title text-primary uppercase shadow-[4px_4px_0_var(--color-primary)]"
           >
-            Studio
-          </span>
-        </h1>
+            <motion.span 
+              animate={{ opacity: [1, 0] }}
+              transition={{ repeat: Infinity, duration: 0.5, ease: "linear" }}
+              className="w-3 h-3 bg-primary" 
+            />
+            SYSTEM_ONLINE // V2.0
+          </motion.div>
 
-        {/* Subtitle */}
-        <p className="max-w-xl font-body-md text-body-md text-on-surface-variant leading-relaxed mb-10">
-          El IDE web para aprender, escribir y simular arquitectura RISC-V.
-          Compila código ensamblador e inspecciona el estado de la CPU
-          en tiempo real, directamente en tu navegador.
-        </p>
+          <h1 className="text-4xl md:text-6xl font-pixel-title leading-tight text-primary mb-6 uppercase">
+            <TypewriterText text="INITIALIZING" delay={0} /><br/>
+            <span className="text-muted-foreground"><TypewriterText text="RISC-V SIMULATOR..." delay={1000} /></span>
+            <motion.span 
+              animate={{ opacity: [0, 1, 0] }} 
+              transition={{ repeat: Infinity, duration: 0.8 }}
+              className="inline-block w-6 h-10 bg-primary ml-2 align-middle"
+            />
+          </h1>
 
-        {/* CTAs */}
-        <div className="flex flex-col sm:flex-row items-center gap-3">
-          <button
-            id="btn-cta-hero"
-            onClick={handleCTA}
-            disabled={isLoading}
-            className="flex items-center gap-2 px-6 py-3 bg-primary text-on-primary font-body-md text-body-md hover:opacity-80 active:scale-95 transition-all disabled:opacity-50"
-          >
-            {!isAuthenticated && <IconGoogle />}
-            {ctaLabel}
-          </button>
-          <a
-            href="/ide"
-            className="px-6 py-3 border border-outline-variant text-on-surface-variant font-body-md text-body-md hover:bg-surface-container-high transition-colors"
-          >
-            Ver el IDE
-          </a>
-        </div>
-
-        {/* Stats row */}
-        <div className="flex items-center gap-8 mt-14 font-code-sm text-code-sm text-on-surface-variant">
-          {[
-            { v: "RV32I", l: "ISA soportada" },
-            { v: "32", l: "registros" },
-            { v: "1 MB", l: "memoria virtual" },
-            { v: "10k", l: "pasos máx." },
-          ].map(({ v, l }) => (
-            <div key={l} className="flex flex-col items-center gap-0.5">
-              <span className="text-primary font-display-mono text-[18px]">{v}</span>
-              <span className="opacity-60">{l}</span>
-            </div>
-          ))}
-        </div>
-      </section>
-
-      {/* ── IDE Preview ────────────────────────────────────────────────────── */}
-      <section className="px-6 pb-24 flex justify-center">
-        <div className="w-full max-w-4xl border border-outline-variant bg-surface-container-low overflow-hidden shadow-2xl">
-          {/* Fake title bar */}
-          <div className="flex items-center gap-2 px-4 h-9 bg-surface-container border-b border-outline-variant">
-            <span className="w-2.5 h-2.5 rounded-full bg-error/60" />
-            <span className="w-2.5 h-2.5 rounded-full bg-yellow-400/60" />
-            <span className="w-2.5 h-2.5 rounded-full bg-primary/60" />
-            <span className="ml-3 font-code-sm text-code-sm text-on-surface-variant">RISC-V Studio — main.s</span>
-          </div>
-          {/* Fake editor content */}
-          <div className="flex" style={{ fontFamily: "JetBrains Mono, monospace", fontSize: 12 }}>
-            {/* Line numbers */}
-            <div className="w-10 bg-surface-container text-outline text-right pr-3 py-4 select-none border-r border-outline-variant leading-6">
-              {Array.from({ length: 9 }, (_, i) => <div key={i}>{i + 1}</div>)}
-            </div>
-            {/* Code */}
-            <pre className="flex-1 py-4 px-4 text-[12px] leading-6 text-on-surface overflow-x-auto">
-              <code>
-                <span className="text-outline"># RISC-V Program Entry</span>{"\n"}
-                <span className="text-outline">.section .text</span>{"\n"}
-                <span className="text-outline">.globl main</span>{"\n"}
-                <span className="text-primary font-semibold">main:</span>{"\n"}
-                {"  "}<span className="text-secondary">addi</span>{" "}<span className="text-on-surface">x1, x0, 5</span>
-                <span className="text-outline">    # Load 5 into x1</span>{"\n"}
-                {"  "}<span className="text-secondary">addi</span>{" "}<span className="text-on-surface">x2, x0, 10</span>
-                <span className="text-outline">   # Load 10 into x2</span>{"\n"}
-                {"  "}<span className="text-secondary">add</span>{"  "}<span className="text-on-surface">x3, x1, x2</span>
-                <span className="text-outline">   # x3 = x1 + x2 = 15</span>{"\n"}
-                <span className="text-primary font-semibold">loop:</span>{"\n"}
-                {"  "}<span className="text-secondary">beq</span>{"  "}<span className="text-on-surface">x0, x0, loop</span>
-              </code>
-            </pre>
-            {/* Registers panel */}
-            <div className="w-48 border-l border-outline-variant bg-surface-container-low py-4 px-3">
-              <p className="font-label-caps text-label-caps text-on-surface-variant mb-2 tracking-widest">REGISTERS</p>
-              {[
-                { r: "x0 (zero)", v: "0x00000000", changed: false },
-                { r: "x1 (ra)", v: "0x00000005", changed: true },
-                { r: "x2 (sp)", v: "0x0000000A", changed: true },
-                { r: "x3 (gp)", v: "0x0000000F", changed: true },
-                { r: "x4 (tp)", v: "0x00000000", changed: false },
-              ].map(({ r, v, changed }) => (
-                <div key={r} className={`flex justify-between py-0.5 px-1 font-code-sm text-code-sm ${changed ? "text-primary font-bold bg-primary-fixed/30" : "text-outline"}`}>
-                  <span>{r.split(" ")[0]}</span>
-                  <span>{v}</span>
-                </div>
-              ))}
-              <p className="text-outline font-code-sm text-[10px] mt-2 text-center">...</p>
-            </div>
-          </div>
-          {/* Fake console */}
-          <div className="h-16 bg-[#131b2e] border-t border-white/5 px-3 py-2 font-code-sm text-code-sm">
-            <span className="text-primary-fixed">[SUCCESS]</span>
-            <span className="text-inverse-on-surface ml-2">Compilation finished in 42ms. 0 errors.</span>
-            <br />
-            <span className="text-secondary-fixed-dim">[INFO]</span>
-            <span className="text-inverse-on-surface/70 ml-2">Execution completed in 3 steps.</span>
-          </div>
-        </div>
-      </section>
-
-      {/* ── Features ───────────────────────────────────────────────────────── */}
-      <section className="px-6 pb-24">
-        <div className="max-w-4xl mx-auto">
-          <h2 className="font-display-mono text-[28px] text-on-surface text-center mb-2">
-            Todo lo que necesitas para aprender RISC-V
-          </h2>
-          <p className="text-on-surface-variant font-body-md text-body-md text-center mb-12">
-            Sin configuración, sin instalación — funciona en el navegador.
+          <p className="text-xl md:text-2xl text-primary/80 max-w-2xl mb-12 leading-relaxed uppercase tracking-widest bg-background/90 p-4 border-l-[6px] border-primary">
+            {`> Cycle-Accurate hardware simulation.`}<br/>
+            {`> Full memory map access.`}<br/>
+            {`> Step-by-step visual execution.`}<br/>
+            {`> Prepare for uplink.`}
           </p>
 
-          <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
-            {FEATURES.map(({ icon, title, description, badge }) => (
-              <div
-                key={title}
-                className="flex flex-col gap-4 p-6 bg-surface-container border border-outline-variant hover:border-primary/40 hover:bg-surface-container-high transition-all group"
+          <div className="flex flex-col sm:flex-row items-center gap-6 w-full sm:w-auto">
+            <button
+              onClick={handleCTA}
+              className="w-full sm:w-auto flex items-center justify-center gap-3 px-8 py-4 bg-primary text-background font-pixel-title text-lg border-[3px] border-primary hover:bg-background hover:text-primary transition-all uppercase group shadow-[8px_8px_0_var(--color-primary)] active:shadow-[0_0_0_var(--color-primary)] active:translate-x-2 active:translate-y-2"
+            >
+              {!isAuthenticated && <IconGoogle />}
+              {isAuthenticated ? "EXECUTE IDE.EXE" : "AUTH VIA GOOGLE"}
+              <motion.div
+                animate={{ x: [0, 5, 0] }}
+                transition={{ repeat: Infinity, duration: 1 }}
               >
-                <div className="flex items-start justify-between">
-                  <div className="w-10 h-10 flex items-center justify-center bg-primary-container/30 text-primary group-hover:bg-primary-container/50 transition-colors">
-                    {icon}
-                  </div>
-                  <span className="font-code-sm text-code-sm text-primary border border-primary/30 px-2 py-0.5">
-                    {badge}
-                  </span>
-                </div>
-                <div>
-                  <h3 className="font-body-md text-body-md font-semibold text-on-surface mb-2">{title}</h3>
-                  <p className="font-body-sm text-body-sm text-on-surface-variant leading-relaxed">{description}</p>
-                </div>
+                <ArrowRight className="w-6 h-6" />
+              </motion.div>
+            </button>
+          </div>
+        </section>
+
+        {/* Mock Terminal Interface */}
+        <section className="w-full max-w-5xl mx-auto px-6 py-24">
+          <motion.div 
+            initial={{ opacity: 0, y: 40 }}
+            whileInView={{ opacity: 1, y: 0 }}
+            viewport={{ once: true }}
+            className="w-full border-[4px] border-primary bg-background overflow-hidden relative shadow-[16px_16px_0_var(--color-primary)]"
+          >
+            {/* Terminal Header */}
+            <div className="flex items-center justify-between px-4 py-3 border-b-[4px] border-primary bg-primary/20">
+              <div className="font-pixel-title text-[12px] text-primary">{`C:\\RISCV_OS\\BIN>`}</div>
+              <div className="flex gap-2">
+                <div className="w-4 h-4 border-2 border-primary bg-background" />
+                <div className="w-4 h-4 border-2 border-primary bg-background" />
+                <div className="w-4 h-4 bg-primary" />
               </div>
+            </div>
+            
+            {/* Terminal Body */}
+            <div className="p-6 font-mono text-lg leading-relaxed text-primary h-[350px] overflow-hidden flex flex-col relative bg-background">
+              <div className="opacity-80">{`> compiling main.s...`}</div>
+              <div className="opacity-80 mt-1">{`> running pass 1 (label resolution)...`}</div>
+              <div className="opacity-80 mt-1">{`> running pass 2 (opcode emission)...`}</div>
+              <div className="mt-2 flex items-center gap-2 text-foreground font-bold">
+                <span className="text-primary bg-primary/20 px-1">[OK]</span> Binary generated (2048 bytes)
+              </div>
+              <div className="opacity-80 mt-4">{`> starting debug session...`}</div>
+              
+              <div className="mt-4 grid grid-cols-2 md:grid-cols-4 gap-4 p-4 border-[3px] border-primary/50 border-dashed bg-primary/5">
+                <div><span className="text-muted-foreground">PC:</span> 0x00000000</div>
+                <div><span className="text-muted-foreground">a0:</span> 0x000007EA</div>
+                <div><span className="text-muted-foreground">a7:</span> 0x00000001</div>
+                <div><span className="text-muted-foreground">sp:</span> 0x000FFFFC</div>
+              </div>
+
+              <div className="mt-4 flex items-center gap-2 text-primary font-bold">
+                <span className="bg-primary text-background px-1">[ASM]</span> 0x0000000C: ecall
+              </div>
+              
+              <div className="mt-auto flex items-center">
+                <span className="mr-2 text-primary font-bold">{`C:\RISCV_OS\BIN>`}</span>
+                <motion.div 
+                  animate={{ opacity: [0, 1, 0] }} 
+                  transition={{ repeat: Infinity, duration: 0.8 }}
+                  className="w-4 h-6 bg-primary"
+                />
+              </div>
+            </div>
+          </motion.div>
+        </section>
+
+        {/* Technical Specs Section */}
+        <section className="w-full bg-primary/10 border-y-[4px] border-primary border-dashed">
+          <div className="max-w-5xl mx-auto px-6 py-24">
+            <div className="mb-12 flex items-center gap-4">
+              <motion.div 
+                animate={{ scale: [1, 1.2, 1] }}
+                transition={{ repeat: Infinity, duration: 2 }}
+                className="w-8 h-8 bg-primary" 
+              />
+              <h2 className="text-2xl font-pixel-title text-primary uppercase">Supported Instructions</h2>
+            </div>
+            
+            <div className="grid grid-cols-2 md:grid-cols-4 gap-6 font-mono text-lg text-primary">
+              <div className="border-[3px] border-primary p-4 shadow-[6px_6px_0_var(--color-primary)] bg-background hover:-translate-y-1 transition-transform">add, sub, and, or, xor</div>
+              <div className="border-[3px] border-primary p-4 shadow-[6px_6px_0_var(--color-primary)] bg-background hover:-translate-y-1 transition-transform">addi, andi, ori, xori</div>
+              <div className="border-[3px] border-primary p-4 shadow-[6px_6px_0_var(--color-primary)] bg-background hover:-translate-y-1 transition-transform">sll, srl, sra, slli</div>
+              <div className="border-[3px] border-primary p-4 shadow-[6px_6px_0_var(--color-primary)] bg-background hover:-translate-y-1 transition-transform">lw, sw, lh, sh, lb, sb</div>
+              <div className="border-[3px] border-primary p-4 shadow-[6px_6px_0_var(--color-primary)] bg-background hover:-translate-y-1 transition-transform">beq, bne, blt, bge</div>
+              <div className="border-[3px] border-primary p-4 shadow-[6px_6px_0_var(--color-primary)] bg-background hover:-translate-y-1 transition-transform">jal, jalr</div>
+              <div className="border-[3px] border-primary p-4 shadow-[6px_6px_0_var(--color-primary)] bg-background hover:-translate-y-1 transition-transform">lui, auipc</div>
+              <div className="border-[3px] border-primary p-4 shadow-[6px_6px_0_var(--color-primary)] bg-primary text-background font-bold hover:-translate-y-1 transition-transform">ecall (Syscalls)</div>
+            </div>
+          </div>
+        </section>
+
+        {/* Features Grid */}
+        <section className="w-full max-w-5xl mx-auto px-6 py-24">
+          <div className="mb-12 border-b-[4px] border-primary pb-4">
+            <h2 className="text-2xl font-pixel-title text-primary uppercase">System_Modules</h2>
+          </div>
+          
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
+            {FEATURES.map((feature, i) => (
+              <motion.div 
+                key={i}
+                initial={{ opacity: 0, y: 20 }}
+                whileInView={{ opacity: 1, y: 0 }}
+                viewport={{ once: true }}
+                transition={{ duration: 0.4, delay: i * 0.1 }}
+                className="p-8 border-[3px] border-primary bg-background shadow-[8px_8px_0_var(--color-primary)] hover:shadow-[4px_4px_0_var(--color-primary)] hover:translate-x-1 hover:translate-y-1 transition-all group relative"
+              >
+                <motion.div 
+                  animate={feature.animation as any}
+                  className="mb-6 text-primary"
+                >
+                  {feature.icon}
+                </motion.div>
+                <h3 className="font-pixel-title text-md text-primary mb-4 uppercase bg-primary/10 inline-block px-2 py-1">{feature.title}</h3>
+                <p className="text-md text-primary/80 leading-relaxed font-mono">{feature.description}</p>
+              </motion.div>
             ))}
           </div>
-        </div>
-      </section>
+        </section>
 
-      {/* ── How it works ───────────────────────────────────────────────────── */}
-      <section className="px-6 pb-24 bg-surface-container">
-        <div className="max-w-3xl mx-auto py-20">
-          <h2 className="font-display-mono text-[28px] text-on-surface text-center mb-12">
-            Cómo funciona
-          </h2>
-          <div className="flex flex-col sm:flex-row items-start gap-0">
-            {STEPS.map(({ num, title, desc }, i) => (
-              <div key={num} className="flex-1 flex flex-col items-center text-center px-6 relative">
-                {/* connector line */}
-                {i < STEPS.length - 1 && (
-                  <div className="hidden sm:block absolute right-0 top-6 w-1/2 h-px bg-outline-variant" />
-                )}
-                <div className="w-12 h-12 flex items-center justify-center border border-primary text-primary font-display-mono text-[18px] bg-surface-container-lowest mb-4 z-10">
-                  {num}
-                </div>
-                <h3 className="font-body-md text-body-md font-semibold text-on-surface mb-2">{title}</h3>
-                <p className="font-body-sm text-body-sm text-on-surface-variant leading-relaxed">{desc}</p>
-              </div>
-            ))}
-          </div>
-        </div>
-      </section>
+      </main>
 
-      {/* ── CTA Final ──────────────────────────────────────────────────────── */}
-      <section className="px-6 py-24 flex flex-col items-center text-center">
-        <div className="absolute left-1/2 -translate-x-1/2 w-[400px] h-[200px] bg-primary/8 rounded-full blur-[60px] pointer-events-none" />
-        <h2 className="font-display-mono text-[32px] text-on-surface mb-4">
-          Empieza a programar RISC-V hoy
-        </h2>
-        <p className="font-body-md text-body-md text-on-surface-variant mb-8 max-w-md">
-          Gratis, en el navegador, sin instalación.
-        </p>
-        <button
-          id="btn-cta-final"
-          onClick={handleCTA}
-          disabled={isLoading}
-          className="flex items-center gap-3 px-8 py-3.5 bg-primary text-on-primary font-body-md text-body-md hover:opacity-80 active:scale-95 transition-all disabled:opacity-50 shadow-lg"
-        >
-          {!isAuthenticated && <IconGoogle />}
-          {isAuthenticated ? "Abrir IDE →" : "Continuar con Google"}
-        </button>
-      </section>
-
-      {/* ── Footer ─────────────────────────────────────────────────────────── */}
-      <footer className="border-t border-outline-variant px-8 py-6 flex items-center justify-between font-code-sm text-code-sm text-on-surface-variant">
-        <span className="font-display-mono text-primary">RISC-V Studio</span>
-        <div className="flex gap-6 opacity-60">
-          <span>RV32I ISA</span>
-          <span>·</span>
-          <span>FastAPI + Next.js</span>
-          <span>·</span>
-          <span>SQLite</span>
+      {/* Footer */}
+      <footer className="relative z-50 border-t-[4px] border-primary py-8 px-6 text-center text-xs font-pixel-title text-primary/80 flex flex-col md:flex-row items-center justify-between max-w-5xl w-full mx-auto uppercase bg-background">
+        <div className="flex items-center gap-3 mb-4 md:mb-0">
+          <div className="w-6 h-6 border-[3px] border-primary text-primary flex items-center justify-center font-bold text-[10px]">R</div>
+          <span>© 2026 RISC-V CORE ARCHITECTURE</span>
         </div>
-        <span className="opacity-40">© 2026</span>
+        <div className="flex items-center gap-6">
+          <a href="#" className="hover:text-background hover:bg-primary transition-colors px-2 py-1">{`[DOCS]`}</a>
+          <a href="#" className="hover:text-background hover:bg-primary transition-colors px-2 py-1">{`[SRC]`}</a>
+          <a href="#" className="hover:text-background hover:bg-primary transition-colors px-2 py-1">{`[SYS]`}</a>
+        </div>
       </footer>
     </div>
   );
