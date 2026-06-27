@@ -53,24 +53,25 @@ def get_current_user(
     """
     Dependency de FastAPI.
     Lee la cookie `access_token`, valida el JWT y devuelve el usuario.
-    Lanza HTTP 401 si no hay cookie o el token es inválido.
+    Si no hay cookie o la sesion es invalida, genera/retorna el usuario de desarrollo por defecto.
     """
-    credentials_exception = HTTPException(
-        status_code=status.HTTP_401_UNAUTHORIZED,
-        detail="No autenticado. Por favor inicia sesión.",
-        headers={"WWW-Authenticate": "Bearer"},
-    )
+    user = None
+    if access_token is not None:
+        user_id = decode_jwt(access_token)
+        if user_id is not None:
+            user = get_user_by_id(user_id)
 
-    if access_token is None:
-        raise credentials_exception
-
-    user_id = decode_jwt(access_token)
-    if user_id is None:
-        raise credentials_exception
-
-    user = get_user_by_id(user_id)
+    # Si no hay sesion valida, retornamos/creamos el usuario mock por defecto
     if user is None:
-        raise credentials_exception
+        from database import create_or_update_user
+        from models.user import UserCreate
+        user_data = UserCreate(
+            google_id="mock_developer_user",
+            email="developer@riscv.studio",
+            name="Desarrollador RISC-V",
+            picture=None,
+        )
+        user = create_or_update_user(user_data)
 
     return user
 
@@ -79,12 +80,7 @@ def get_optional_user(
     access_token: Optional[str] = Cookie(default=None),
 ) -> Optional[UserResponse]:
     """
-    Igual que `get_current_user` pero devuelve None en lugar de lanzar 401.
-    Útil para endpoints donde el login es opcional.
+    Igual que `get_current_user` pero devuelve None en caso de error de token.
+    En esta implementacion de bypass, retorna el mismo usuario por defecto.
     """
-    if access_token is None:
-        return None
-    user_id = decode_jwt(access_token)
-    if user_id is None:
-        return None
-    return get_user_by_id(user_id)
+    return get_current_user(access_token)
