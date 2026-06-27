@@ -37,28 +37,34 @@ GOOGLE_USERINFO_URL = "https://www.googleapis.com/oauth2/v3/userinfo"
 
 # ── Auth endpoints ─────────────────────────────────────────────────────────────
 
-@router.get("/auth/google", summary="Inicia el flujo OAuth con Google")
+@router.get("/auth/google", summary="Inicia el flujo OAuth con Google (Bypassed)")
 def login_google():
     """
-    Redirige al usuario al consent screen de Google OAuth2.
-    Solicita los scopes de perfil y email.
+    Bypass Google OAuth2 for simple local or public IP deployments.
+    Directly logs in a mock developer user and issues the JWT token cookie.
     """
-    if not GOOGLE_CLIENT_ID:
-        raise HTTPException(
-            status_code=500,
-            detail="GOOGLE_CLIENT_ID no configurado. Revisa el archivo .env de la API.",
-        )
+    # 1. Crear o actualizar el usuario mock en la base de datos local
+    user_data = UserCreate(
+        google_id="mock_developer_user",
+        email="developer@riscv.studio",
+        name="Desarrollador RISC-V",
+        picture=None,
+    )
+    user = create_or_update_user(user_data)
 
-    params = {
-        "client_id":     GOOGLE_CLIENT_ID,
-        "redirect_uri":  REDIRECT_URI,
-        "response_type": "code",
-        "scope":         "openid email profile",
-        "access_type":   "offline",
-        "prompt":        "select_account",
-    }
-    query = "&".join(f"{k}={v}" for k, v in params.items())
-    return RedirectResponse(url=f"{GOOGLE_AUTH_URL}?{query}")
+    # 2. Emitir JWT propio en la cookie de sesion HTTP-only
+    jwt_token = create_jwt(user.id)
+    response = RedirectResponse(url=f"{FRONTEND_URL}/", status_code=302)
+    response.set_cookie(
+        key="access_token",
+        value=jwt_token,
+        httponly=True,          # Protegido contra accesos JS (XSS)
+        secure=False,           # Permite HTTP (para IPs publicas y locales sin SSL)
+        samesite="lax",
+        max_age=7 * 24 * 3600,  # 7 dias
+        path="/",
+    )
+    return response
 
 
 @router.get("/auth/callback", summary="Callback de Google OAuth2")
