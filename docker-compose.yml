@@ -6,11 +6,11 @@ services:
       context: .
       dockerfile: api/Dockerfile
     ports:
-      - "8000:8000"
+      - "${PORT:-8000}:${PORT:-8000}"
     volumes:
       - ./api/users.db:/app/api/users.db
-    env_file:
-      - ./api/.env
+    environment:
+      - PORT=${PORT:-8000}
     restart: unless-stopped
 
   frontend:
@@ -18,10 +18,9 @@ services:
       context: .
       dockerfile: Dockerfile
     ports:
-      - "3000:3000"
+      - "${FRONTEND_PORT:-3000}:3000"
     environment:
-      # URL a la que Next.js apuntará sus rewrites/fetch
-      - NEXT_PUBLIC_API_URL=http://backend:8000
+      - NEXT_PUBLIC_API_URL=http://backend:${PORT:-8000}
     depends_on:
       - backend
     restart: unless-stopped
