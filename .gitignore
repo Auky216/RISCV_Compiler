@@ -44,6 +44,7 @@ next-env.d.ts
 __pycache__/
 *.py[cod]
 .venv/
+api/venv/
 
 # base de datos local de usuarios
 api/users.db
