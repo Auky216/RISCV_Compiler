@@ -1,5 +1,6 @@
 "use client";
 
+import { Fragment } from "react";
 import { RiscvModel, ABI_NAMES } from "@/domain/riscv/model";
 
 interface RegisterPanelProps {
@@ -21,7 +22,7 @@ export function RegisterPanel({ model, displayFormat, showZeroRegisters }: Regis
   );
 
   return (
-    <div className="flex-1 overflow-y-auto p-4 bg-background pb-10">
+    <div className="p-4 bg-background pb-10">
       {/* Format badge */}
       <div className="flex items-center justify-between mb-4">
         <span className="font-pixel-title text-xs text-primary uppercase">
@@ -45,7 +46,7 @@ export function RegisterPanel({ model, displayFormat, showZeroRegisters }: Regis
         {rows.map(({ name, i }) => {
           const changed = isChanged(i);
           return (
-            <div key={i} className="contents">
+            <Fragment key={i}>
               <div
                 className={`p-2 font-mono text-sm flex justify-between items-center uppercase transition-colors duration-150 ${
                   changed 
@@ -65,7 +66,7 @@ export function RegisterPanel({ model, displayFormat, showZeroRegisters }: Regis
               >
                 {getValue(i)}
               </div>
-            </div>
+            </Fragment>
           );
         })}
       </div>

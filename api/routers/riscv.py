@@ -71,9 +71,10 @@ def inject_state(session: DebugSession):
     if session.architecture == "single_cycle":
         sc_reg.rf = list(session.registers)
         
-        # El hardware de la Tarea asume arreglos de palabras de 32-bits (RAM[64]).
-        sc_imem.RAM = [0] * 64
-        for i in range(64):
+        # El hardware de la Tarea asume arreglos de palabras de 32-bits (RAM[num_words]).
+        num_words = max(64, (session.program_size + 3) // 4)
+        sc_imem.RAM = [0] * num_words
+        for i in range(num_words):
             offset = i * 4
             word = int.from_bytes(session.memory[offset:offset+4], byteorder='little', signed=False)
             sc_imem.RAM[i] = word

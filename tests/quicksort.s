@@ -1,6 +1,6 @@
 .global _start
 _start:
-	li		sp, 0x10000
+	li		sp, 0x2000
     li		a0, 0x1000
 
     li		t1, 6

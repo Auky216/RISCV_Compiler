@@ -44,8 +44,8 @@ export function TopNavBar({
       onUploadBin(e.target.files[0]);
     }
   };
-  const pcValue = model
-    ? "0x" + (model.stepsExecuted * 4).toString(16).padStart(8, "0").toUpperCase()
+  const pcValue = model && model.pc !== undefined
+    ? "0x" + model.pc.toString(16).padStart(8, "0").toUpperCase()
     : "0x00000000";
 
   return (

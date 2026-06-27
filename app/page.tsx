@@ -81,8 +81,17 @@ const TypewriterText = ({ text, delay = 0 }: { text: string, delay?: number }) =
   return <span>{displayed}</span>;
 };
 
-// Background Matrix/Terminal Effect
 const TerminalGrid = () => {
+  const [mounted, setMounted] = useState(false);
+
+  useEffect(() => {
+    setMounted(true);
+  }, []);
+
+  if (!mounted) {
+    return null;
+  }
+
   return (
     <div className="absolute inset-0 z-0 overflow-hidden opacity-15 pointer-events-none flex flex-wrap gap-2 p-4 text-xs font-mono text-primary">
       {Array.from({ length: 200 }).map((_, i) => (

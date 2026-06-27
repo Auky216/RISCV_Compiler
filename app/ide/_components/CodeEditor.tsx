@@ -94,12 +94,20 @@ export function CodeEditor({ code, onChange, fontSize = "md", isBinaryMode = fal
       
       // Si la línea actual se sale de la vista (dejamos un margen de 2 líneas)
       if (targetY < visibleTop + lineHeight * 2 || targetY > visibleBottom - lineHeight * 3) {
-        // Hacemos scroll suave para centrar la línea
+        // Centrar la línea en el editor
         const newScrollTop = Math.max(0, targetY - textarea.clientHeight / 2);
         
-        // Scroll suave nativo. Esto disparará eventos 'scroll' que mantendrán
-        // las demás capas sincronizadas a través de handleScroll.
-        textarea.scrollTo({ top: newScrollTop, behavior: "smooth" });
+        // Asignación inmediata para máxima robustez, sincronización y compatibilidad con textareas
+        textarea.scrollTop = newScrollTop;
+        if (syntaxRef.current) {
+          syntaxRef.current.scrollTop = newScrollTop;
+        }
+        if (lineNumbersRef.current) {
+          lineNumbersRef.current.scrollTop = newScrollTop;
+        }
+        if (highlightRef.current) {
+          highlightRef.current.scrollTop = newScrollTop;
+        }
       }
     }
   }, [currentLine, lineH]);
@@ -135,7 +143,7 @@ export function CodeEditor({ code, onChange, fontSize = "md", isBinaryMode = fal
   };
 
   return (
-    <section className="w-3/5 flex flex-col bg-background">
+    <section className="w-full h-full flex flex-col bg-background">
       {/* Tab bar */}
       <div className="flex items-center justify-between h-10 bg-primary/10 px-4 border-b-2 border-primary">
         <div className="flex items-center gap-3 bg-background border-[1px] border-primary px-3 py-1 shadow-[2px_2px_0_var(--color-primary)]">
@@ -151,26 +159,28 @@ export function CodeEditor({ code, onChange, fontSize = "md", isBinaryMode = fal
         style={{ fontFamily: "monospace", fontSize: text }}
       >
         {/* Line numbers */}
-        <div
-          ref={lineNumbersRef}
-          className="w-16 bg-primary/5 text-right py-4 text-primary/50 select-none border-r-2 border-primary overflow-hidden flex-shrink-0 relative z-10"
-          style={{ lineHeight: lineH }}
-          aria-hidden="true"
-        >
-          {lines.map((_, i) => {
-            const isCurrent = currentLine === i + 1;
-            return (
-              <div 
-                key={i} 
-                className={`flex justify-end items-center px-2 ${isCurrent ? "bg-primary text-white font-bold shadow-[inset_4px_0_0_0_var(--color-primary)]" : "pr-4"}`}
-                style={{ height: lineH }}
-              >
-                {isCurrent && <span className="text-[10px] mr-2">►</span>}
-                {i + 1}
-              </div>
-            );
-          })}
-        </div>
+        {!isBinaryMode && (
+          <div
+            ref={lineNumbersRef}
+            className="w-16 bg-primary/5 text-right pt-4 pb-24 text-primary/50 select-none border-r-2 border-primary overflow-hidden flex-shrink-0 relative z-10"
+            style={{ lineHeight: lineH }}
+            aria-hidden="true"
+          >
+            {lines.map((_, i) => {
+              const isCurrent = currentLine === i + 1;
+              return (
+                <div 
+                  key={i} 
+                  className={`flex justify-end items-center px-2 ${isCurrent ? "bg-primary text-white font-bold shadow-[inset_4px_0_0_0_var(--color-primary)]" : "pr-4"}`}
+                  style={{ height: lineH }}
+                >
+                  {isCurrent && <span className="text-[10px] mr-2">►</span>}
+                  {i + 1}
+                </div>
+              );
+            })}
+          </div>
+        )}
 
         {/* Textarea Area */}
         <div className="flex-1 relative overflow-hidden flex flex-col">
@@ -178,7 +188,7 @@ export function CodeEditor({ code, onChange, fontSize = "md", isBinaryMode = fal
           <div 
             ref={highlightRef}
             aria-hidden="true"
-            className="absolute inset-0 m-0 py-4 px-4 overflow-hidden pointer-events-none z-0"
+            className="absolute inset-0 m-0 pt-4 pb-24 px-4 overflow-hidden pointer-events-none z-0"
           >
             <div style={{ height: `calc(${lines.length} * ${lineH})`, position: 'relative' }}>
               {!isBinaryMode && currentLine && currentLine > 0 && currentLine <= lines.length && (
@@ -208,8 +218,8 @@ export function CodeEditor({ code, onChange, fontSize = "md", isBinaryMode = fal
             <pre
               aria-hidden="true"
               ref={syntaxRef}
-              className="absolute inset-0 m-0 py-4 px-4 bg-transparent text-transparent w-full h-full overflow-hidden whitespace-pre pointer-events-none z-0"
-              style={{ lineHeight: lineH, fontSize: text }}
+              className="absolute inset-0 m-0 pt-4 pb-24 px-4 bg-transparent text-transparent w-full h-full overflow-hidden whitespace-pre pointer-events-none z-0"
+              style={{ fontFamily: "monospace", lineHeight: lineH, fontSize: text, boxSizing: "border-box" }}
             >
               {lines.map((line, i) => (
                 <React.Fragment key={i}>
@@ -231,8 +241,8 @@ export function CodeEditor({ code, onChange, fontSize = "md", isBinaryMode = fal
               autoCapitalize="off"
               wrap="off"
               onKeyDown={handleKeyDown}
-              className="absolute inset-0 m-0 py-4 px-4 bg-transparent resize-none outline-none text-transparent caret-primary w-full h-full overflow-auto z-10 whitespace-pre"
-              style={{ lineHeight: lineH, fontSize: text }}
+              className="absolute inset-0 m-0 pt-4 pb-24 px-4 bg-transparent resize-none outline-none border-0 text-transparent caret-primary w-full h-full overflow-auto z-10 whitespace-pre"
+              style={{ fontFamily: "monospace", lineHeight: lineH, fontSize: text, boxSizing: "border-box" }}
               aria-label="RISC-V assembler code editor"
             />
           </div>
