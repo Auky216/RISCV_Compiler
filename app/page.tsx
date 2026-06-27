@@ -7,15 +7,7 @@ import { motion } from "framer-motion";
 import { useState, useEffect } from "react";
 import { Cpu, Terminal, ShieldCheck, ArrowRight, Server, Database, Code, Cog } from "lucide-react";
 
-// Google Icon SVG
-const IconGoogle = () => (
-  <svg width="18" height="18" viewBox="0 0 18 18" aria-hidden="true" className="inline-block mr-2">
-    <path fill="currentColor" d="M17.64 9.2c0-.637-.057-1.251-.164-1.84H9v3.481h4.844c-.209 1.125-.843 2.078-1.796 2.717v2.258h2.908c1.702-1.567 2.684-3.875 2.684-6.615Z"/>
-    <path fill="currentColor" d="M9 18c2.43 0 4.467-.806 5.956-2.18l-2.908-2.259c-.806.54-1.837.86-3.048.86-2.344 0-4.328-1.584-5.036-3.711H.957v2.332A8.997 8.997 0 0 0 9 18Z"/>
-    <path fill="currentColor" d="M3.964 10.71A5.41 5.41 0 0 1 3.682 9c0-.593.102-1.17.282-1.71V4.958H.957A8.996 8.996 0 0 0 0 9c0 1.452.348 2.827.957 4.042l3.007-2.332Z"/>
-    <path fill="currentColor" d="M9 3.58c1.321 0 2.508.454 3.44 1.345l2.582-2.58C13.463.891 11.426 0 9 0A8.997 8.997 0 0 0 .957 4.958L3.964 7.29C4.672 5.163 6.656 3.58 9 3.58Z"/>
-  </svg>
-);
+
 
 const IconGithub = () => (
   <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
@@ -149,7 +141,7 @@ export default function LandingPage() {
             disabled={isLoading}
             className="flex items-center gap-2 px-4 py-2 border-[3px] border-primary text-primary text-sm font-bold uppercase hover:bg-primary hover:text-background transition-all disabled:opacity-50 font-pixel-title shadow-[4px_4px_0_var(--color-primary)] active:shadow-[0_0_0_var(--color-primary)] active:translate-y-1 active:translate-x-1"
           >
-            {isLoading ? "WAIT..." : isAuthenticated ? "BOOT_IDE" : "LOGIN"}
+            {isLoading ? "WAIT..." : isAuthenticated ? "BOOT_IDE" : "INGRESAR"}
           </button>
         </div>
       </nav>
@@ -188,13 +180,11 @@ export default function LandingPage() {
             {`> Prepare for uplink.`}
           </p>
 
-          <div className="flex flex-col sm:flex-row items-center gap-6 w-full sm:w-auto">
             <button
               onClick={handleCTA}
               className="w-full sm:w-auto flex items-center justify-center gap-3 px-8 py-4 bg-primary text-background font-pixel-title text-lg border-[3px] border-primary hover:bg-background hover:text-primary transition-all uppercase group shadow-[8px_8px_0_var(--color-primary)] active:shadow-[0_0_0_var(--color-primary)] active:translate-x-2 active:translate-y-2"
             >
-              {!isAuthenticated && <IconGoogle />}
-              {isAuthenticated ? "EXECUTE IDE.EXE" : "AUTH VIA GOOGLE"}
+              {"INGRESAR AL IDE"}
               <motion.div
                 animate={{ x: [0, 5, 0] }}
                 transition={{ repeat: Infinity, duration: 1 }}
@@ -202,7 +192,6 @@ export default function LandingPage() {
                 <ArrowRight className="w-6 h-6" />
               </motion.div>
             </button>
-          </div>
         </section>
 
         {/* Mock Terminal Interface */}
