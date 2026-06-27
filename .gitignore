@@ -47,6 +47,7 @@ __pycache__/
 
 # base de datos local de usuarios
 api/users.db
+/users.db
 
 # credenciales de OAuth (nunca commitear)
 client_secret*.json
