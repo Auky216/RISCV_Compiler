@@ -54,7 +54,7 @@ def login_google():
 
     # 2. Emitir JWT propio en la cookie de sesion HTTP-only
     jwt_token = create_jwt(user.id)
-    response = RedirectResponse(url=f"{FRONTEND_URL}/", status_code=302)
+    response = RedirectResponse(url="/", status_code=302)
     response.set_cookie(
         key="access_token",
         value=jwt_token,
@@ -75,7 +75,7 @@ async def google_callback(code: Optional[str] = None, error: Optional[str] = Non
     usuario, se guarda/actualiza en la BD y se emite una cookie JWT.
     """
     if error or not code:
-        return RedirectResponse(url=f"{FRONTEND_URL}/login?error=acceso_denegado")
+        return RedirectResponse(url="/login?error=acceso_denegado")
 
     # 1. Intercambiar code → access_token
     async with httpx.AsyncClient() as client:
@@ -116,7 +116,7 @@ async def google_callback(code: Optional[str] = None, error: Optional[str] = Non
 
     # 4. Emitir JWT propio en cookie HTTP-only
     jwt_token = create_jwt(user.id)
-    response = RedirectResponse(url=f"{FRONTEND_URL}/", status_code=302)
+    response = RedirectResponse(url="/", status_code=302)
     response.set_cookie(
         key="access_token",
         value=jwt_token,
@@ -132,7 +132,7 @@ async def google_callback(code: Optional[str] = None, error: Optional[str] = Non
 @router.get("/auth/logout", summary="Cierra la sesión del usuario")
 def logout():
     """Elimina la cookie de sesión y redirige al login."""
-    response = RedirectResponse(url=f"{FRONTEND_URL}/login", status_code=302)
+    response = RedirectResponse(url="/login", status_code=302)
     response.delete_cookie(key="access_token", path="/")
     return response
 
