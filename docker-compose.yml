@@ -7,8 +7,6 @@ services:
       dockerfile: api/Dockerfile
     ports:
       - "${PORT:-8000}:${PORT:-8000}"
-    volumes:
-      - ./api/users.db:/app/api/users.db
     environment:
       - PORT=${PORT:-8000}
     restart: unless-stopped
