@@ -141,7 +141,7 @@ export default function LandingPage() {
           <span className="font-pixel-title text-xl tracking-widest uppercase text-primary">RISC-V OS</span>
         </div>
         <div className="flex items-center gap-6">
-          <a href="https://github.com" target="_blank" rel="noreferrer" className="text-primary hover:opacity-70 transition-colors">
+          <a href="https://github.com/Auky216/RISCV_Compiler" target="_blank" rel="noreferrer" className="text-primary hover:opacity-70 transition-colors">
             <IconGithub />
           </a>
           <button
@@ -320,7 +320,7 @@ export default function LandingPage() {
         </div>
         <div className="flex items-center gap-6">
           <a href="#" className="hover:text-background hover:bg-primary transition-colors px-2 py-1">{`[DOCS]`}</a>
-          <a href="#" className="hover:text-background hover:bg-primary transition-colors px-2 py-1">{`[SRC]`}</a>
+          <a href="https://github.com/Auky216/RISCV_Compiler" target="_blank" rel="noreferrer" className="hover:text-background hover:bg-primary transition-colors px-2 py-1">{`[SRC]`}</a>
           <a href="#" className="hover:text-background hover:bg-primary transition-colors px-2 py-1">{`[SYS]`}</a>
         </div>
       </footer>
