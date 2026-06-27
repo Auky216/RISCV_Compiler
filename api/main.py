@@ -38,17 +38,29 @@ app = FastAPI(
     version="2.0.0",
 )
 
-# ── CORS ───────────────────────────────────────────────────────────────────────
-# Permite peticiones del servidor de desarrollo de Next.js
-FRONTEND_URL = os.getenv("FRONTEND_URL", "http://localhost:3000")
+# ── CORS Dinámico ──────────────────────────────────────────────────────────────
+# Permite peticiones con credenciales desde cualquier origen (localhost, IPs, etc.)
+@app.middleware("http")
+async def add_cors_header(request, call_next):
+    origin = request.headers.get("origin")
+    # Para peticiones preflight (OPTIONS)
+    if request.method == "OPTIONS":
+        from fastapi.responses import Response
+        response = Response()
+        if origin:
+            response.headers["Access-Control-Allow-Origin"] = origin
+            response.headers["Access-Control-Allow-Credentials"] = "true"
+            response.headers["Access-Control-Allow-Methods"] = "*"
+            response.headers["Access-Control-Allow-Headers"] = "*"
+        return response
 
-app.add_middleware(
-    CORSMiddleware,
-    allow_origins=[FRONTEND_URL],
-    allow_credentials=True,          # Necesario para enviar/recibir cookies
-    allow_methods=["*"],
-    allow_headers=["*"],
-)
+    response = await call_next(request)
+    if origin:
+        response.headers["Access-Control-Allow-Origin"] = origin
+        response.headers["Access-Control-Allow-Credentials"] = "true"
+        response.headers["Access-Control-Allow-Methods"] = "*"
+        response.headers["Access-Control-Allow-Headers"] = "*"
+    return response
 
 # ── Inicialización de la BD ────────────────────────────────────────────────────
 @app.on_event("startup")
