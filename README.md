@@ -34,7 +34,7 @@ El sistema está construido bajo una arquitectura desacoplada Cliente-Servidor d
 
 ## 💻 Instalación y Guía de Uso
 
-Asegúrate de tener instalados **Node.js (v18 o superior)** y **Python (v3.9 o superior)**.
+Asegúrate de tener instalados **Node.js 20.9.0 o superior** (requisito de Next.js 16.2.7 en `package-lock.json`) y **Python 3.9 o superior**.
 
 ### **Paso 1: Configurar y Ejecutar el Backend (FastAPI)**
 
